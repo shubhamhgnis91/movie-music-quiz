@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Music Quiz</title>
+</head>
+<body>
+    <h1>Movie Music Quiz</h1>
+    <button id="getSongBtn" onclick="getSong()">Get New Song</button>
+    <hr>
+    <audio id="audioPlayer" controls></audio>
+
+    <script>
+        function getSong() {
+            console.log("Fetching a new song...");
+            fetch('http://127.0.0.1:8000/get_quiz_song')
+                .then(response => response.json())
+                .then(songData => {
+                    console.log(songData);
+
+                    // --- 1. Get the audio player element ---
+                    const audioPlayer = document.getElementById('audioPlayer');
+
+                    // --- 2. Set its source to the preview URL ---
+                    audioPlayer.src = songData.preview_url;
+
+                    // --- 3. Tell it to play ---
+                    audioPlayer.play();
+                })
+                .catch(error => {
+                    // It's good practice to log any errors
+                    console.error('Error fetching song:', error);
+                });
+        }
+    </script>
+</body>
+</html>
