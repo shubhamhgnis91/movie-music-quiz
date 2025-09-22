@@ -235,6 +235,24 @@
             box-shadow: var(--shadow-lg);
         }
 
+        .room-card.private {
+            border-left-color: var(--warning-color);
+        }
+
+        .room-card.private::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: var(--warning-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .room-info {
             display: flex;
             justify-content: space-between;
@@ -252,6 +270,16 @@
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.9rem;
+        }
+
+        .private-badge {
+            background: var(--warning-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
         }
 
         /* Room Layout - Three Column Design */
@@ -397,6 +425,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
         .mystery-box {
@@ -412,6 +441,52 @@
             margin: 20px 0;
             animation: pulse 2s infinite;
             box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .countdown-timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        .countdown-timer.warning {
+            background: rgba(254, 202, 87, 0.9);
+            color: white;
+            animation: timerWarning 0.5s ease-in-out infinite;
+        }
+
+        .countdown-timer.critical {
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            animation: timerCritical 0.3s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes timerWarning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes timerCritical {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
         }
 
         .album-reveal {
@@ -549,6 +624,24 @@
         .suggestion-item:hover {
             background: var(--bg-light);
             color: var(--primary-color);
+        }
+
+        /* Join Room Section */
+        .join-room-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--bg-light);
+        }
+
+        .join-room-flex {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .join-room-flex .input-group {
+            flex: 1;
+            margin: 0;
         }
 
         /* Right Sidebar - Chat */
@@ -870,6 +963,12 @@
                 flex: 1;
                 min-height: 200px;
             }
+
+            .countdown-timer {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
         }
 
         @media (max-width: 768px) {
@@ -889,6 +988,14 @@
             
             .game-type-options {
                 flex-direction: column;
+            }
+
+            .join-room-flex {
+                flex-direction: column;
+            }
+
+            .join-room-flex .input-group {
+                margin: 10px 0;
             }
         }
 
@@ -951,16 +1058,44 @@
             <div class="card">
                 <div class="section-title">
                     <i class="fas fa-globe"></i>
-                    Join Public Rooms
+                    Join Existing Room
                 </div>
-                <div id="publicRoomsList" class="room-grid">
-                    <div class="loading"></div>
-                    Loading available rooms...
+                
+                <!-- Join by Room ID Section -->
+                <div class="join-room-section">
+                    <h4 style="margin-bottom: 15px; color: var(--primary-color);">
+                        <i class="fas fa-key"></i> Join by Room ID
+                    </h4>
+                    <div class="join-room-flex">
+                        <div class="input-group">
+                            <input type="text" id="roomIdInput" placeholder=" " style="text-transform: uppercase;">
+                            <label>Room ID</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="joinPasswordInput" placeholder=" ">
+                            <label>Password (if required)</label>
+                        </div>
+                        <button class="btn btn-outline" onclick="joinRoomById()" style="margin-left: 10px;">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Join
+                        </button>
+                    </div>
                 </div>
-                <button class="btn btn-outline" onclick="loadPublicRooms()">
-                    <i class="fas fa-sync-alt"></i>
-                    Refresh Rooms
-                </button>
+
+                <!-- Public Rooms Section -->
+                <div style="margin-top: 30px;">
+                    <h4 style="margin-bottom: 15px; color: var(--primary-color);">
+                        <i class="fas fa-list"></i> Available Rooms
+                    </h4>
+                    <div id="publicRoomsList" class="room-grid">
+                        <div class="loading"></div>
+                        Loading available rooms...
+                    </div>
+                    <button class="btn btn-outline" onclick="loadPublicRooms()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Rooms
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1007,6 +1142,7 @@
                         <!-- Mystery Box (shown during round) -->
                         <div id="mysteryBox" class="mystery-box hidden">
                             <i class="fas fa-question"></i>
+                            <div id="countdownTimer" class="countdown-timer hidden">30</div>
                         </div>
                         
                         <!-- Manual Play Button (shown when autoplay fails) -->
@@ -1146,6 +1282,7 @@
         let playerName;
         let roomId;
         let typingTimer;
+        let countdownInterval;
         let currentRoundActive = false;
         let hasSubmittedGuess = false;
         let latestGuess = '';
@@ -1161,6 +1298,8 @@
         const views = document.querySelectorAll('.view');
         const playerNameInput = document.getElementById('playerNameInput');
         const passwordInput = document.getElementById('passwordInput');
+        const roomIdInput = document.getElementById('roomIdInput');
+        const joinPasswordInput = document.getElementById('joinPasswordInput');
         const publicRoomsList = document.getElementById('publicRoomsList');
         const roomIdSpan = document.getElementById('roomIdSpan');
         const playerList = document.getElementById('playerList');
@@ -1174,6 +1313,7 @@
         const currentRoundSpan = document.getElementById('currentRound');
         const totalRoundsSpan = document.getElementById('totalRounds');
         const notificationsList = document.getElementById('notificationsList');
+        const countdownTimer = document.getElementById('countdownTimer');
         
         // Game display elements
         const audioPlayerSection = document.getElementById('audioPlayerSection');
@@ -1185,6 +1325,42 @@
         const songTitle = document.getElementById('songTitle');
         const movieTitle = document.getElementById('movieTitle');
         const guessStatus = document.getElementById('guessStatus');
+
+        // COUNTDOWN TIMER FUNCTIONS
+        function startCountdownTimer(duration) {
+            let timeLeft = duration;
+            countdownTimer.textContent = timeLeft;
+            countdownTimer.classList.remove('hidden', 'warning', 'critical');
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                countdownTimer.textContent = timeLeft;
+                
+                // Change styling based on time left
+                if (timeLeft <= 5) {
+                    countdownTimer.classList.add('critical');
+                    countdownTimer.classList.remove('warning');
+                } else if (timeLeft <= 10) {
+                    countdownTimer.classList.add('warning');
+                    countdownTimer.classList.remove('critical');
+                } else {
+                    countdownTimer.classList.remove('warning', 'critical');
+                }
+                
+                if (timeLeft <= 0) {
+                    stopCountdownTimer();
+                }
+            }, 1000);
+        }
+
+        function stopCountdownTimer() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            countdownTimer.classList.add('hidden');
+            countdownTimer.classList.remove('warning', 'critical');
+        }
 
         // AUDIO FUNCTIONS
         function playAudioManually() {
@@ -1316,6 +1492,7 @@
             manualPlaySection.classList.add('hidden');
             albumReveal.classList.add('hidden');
             songInfo.classList.add('hidden');
+            stopCountdownTimer();
         }
 
         function showMysteryBox() {
@@ -1323,13 +1500,15 @@
             mysteryBox.classList.remove('hidden');
             albumReveal.classList.add('hidden');
             songInfo.classList.add('hidden');
-            // manualPlaySection visibility handled by audio loading logic
+            // Start countdown timer
+            startCountdownTimer(gameSettings.music_duration);
         }
 
         function showAlbumReveal(albumImageUrl, songTitleText, movieName) {
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.add('hidden');
             manualPlaySection.classList.add('hidden');
+            stopCountdownTimer();
             
             if (albumImageUrl) {
                 albumImage.src = albumImageUrl;
@@ -1339,7 +1518,7 @@
             // ✅ FIXED: Properly update song info with correct DOM elements
             if (songTitleText || movieName) {
                 if (songTitleText) {
-                    songTitle.textContent = songTitleText; // Fixed: was shadowingvariable
+                    songTitle.textContent = songTitleText; // Fixed: was shadowing variable
                 }
                 if (movieName) {
                     movieTitle.textContent = `From "${movieName}"`;
@@ -1514,6 +1693,7 @@
                 ws.close();
             }
             audioPlayer.pause();
+            stopCountdownTimer();
             showView('home-view');
             loadPublicRooms();
             showNotification('Left the room', 'info');
@@ -1558,7 +1738,7 @@
                         <div class="room-card" style="text-align: center; color: var(--text-light);">
                             <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
                             <h3>No public rooms available</h3>
-                            <p>Create your own room to get started!</p>
+                            <p>Create your own room or join by Room ID!</p>
                         </div>
                     `;
                 } else {
@@ -1636,7 +1816,29 @@
             }
         }
 
-        function joinRoom(newRoomId) {
+        // NEW: Join room by ID function
+        function joinRoomById() {
+            const roomIdToJoin = roomIdInput.value.trim().toUpperCase();
+            const password = joinPasswordInput.value.trim();
+            
+            if (!roomIdToJoin) {
+                showNotification('Please enter a Room ID', 'error');
+                roomIdInput.focus();
+                return;
+            }
+            
+            if (!playerNameInput.value.trim()) {
+                showNotification('Please enter your name first', 'error');
+                playerNameInput.focus();
+                return;
+            }
+            
+            // Store password for the connection
+            sessionStorage.setItem(`room_${roomIdToJoin}_password`, password);
+            joinRoom(roomIdToJoin, password);
+        }
+
+        function joinRoom(newRoomId, roomPassword = null) {
             if (!playerNameInput.value.trim() && !playerName) {
                 showNotification('Please enter your name', 'error');
                 playerNameInput.focus();
@@ -1650,7 +1852,12 @@
             const encodedPlayerName = encodeURIComponent(playerName);
             // ✅ FIXED: Dynamic WebSocket protocol detection for HTTPS support
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
+            let wsUrl = `${protocol}//${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
+            
+            // Add password to WebSocket URL if provided
+            if (roomPassword) {
+                wsUrl += `?password=${encodeURIComponent(roomPassword)}`;
+            }
 
             console.log("Connecting to WebSocket:", wsUrl);
             ws = new WebSocket(wsUrl);
@@ -1661,6 +1868,10 @@
                 showAudioPlayer();
                 showNotification(`Connected to room ${roomId}`, 'success');
                 addGameNotification(`Welcome to room ${roomId}! 🎉`, 'round_start');
+                
+                // Clear join form
+                roomIdInput.value = '';
+                joinPasswordInput.value = '';
             };
 
             ws.onmessage = (event) => {
@@ -1709,6 +1920,7 @@
                     audioPlayer.pause();
                     manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
+                    stopCountdownTimer();
                     
                     // ✅ FIXED: Show album reveal with proper song title display
                     console.log('Round ended, song data:', message);
@@ -1727,18 +1939,29 @@
                     guessInput.disabled = true;
                     guessStatus.textContent = 'Game finished!';
                     guessStatus.style.color = 'var(--info-color)';
+                    stopCountdownTimer();
                     showAudioPlayer();
                 } else if (message.action === "settings_updated") {
                     gameSettings = message.settings;
                     showNotification('Game settings updated!', 'info');
+                } else if (message.action === "error") {
+                    showNotification(message.message, 'error');
+                    showView('home-view');
                 }
             };
 
             ws.onclose = (event) => {
                 console.error("WebSocket closed:", event);
                 const reason = event.reason || "Connection lost";
-                showNotification(`Disconnected: ${reason}`, 'error');
+                if (reason === "Invalid password") {
+                    showNotification('Incorrect password for this room', 'error');
+                } else if (reason === "Room not found") {
+                    showNotification('Room not found', 'error');
+                } else {
+                    showNotification(`Disconnected: ${reason}`, 'error');
+                }
                 audioPlayer.pause();
+                stopCountdownTimer();
                 showView('home-view');
                 loadPublicRooms();
             };
@@ -1936,6 +2159,16 @@
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#guessInput') && !e.target.closest('#suggestions-list')) {
                 hideSuggestions();
+            }
+        });
+
+        // Auto-uppercase room ID input
+        document.addEventListener('DOMContentLoaded', () => {
+            const roomIdInput = document.getElementById('roomIdInput');
+            if (roomIdInput) {
+                roomIdInput.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                });
             }
         });
 
