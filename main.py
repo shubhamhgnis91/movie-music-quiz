@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import json
 import os
 import random
@@ -23,6 +24,83 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --------------------------------------------------------------------------
+# Database Initialization
+# --------------------------------------------------------------------------
+
+def initialize_database():
+    """Initialize the database with movie data on startup"""
+    try:
+        connection = sqlite3.connect('movies.db')
+        cursor = connection.cursor()
+        
+        # Check if table exists and has data
+        cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='movies'")
+        table_exists = cursor.fetchone()[0] > 0
+        
+        if table_exists:
+            cursor.execute("SELECT COUNT(*) FROM movies")
+            row_count = cursor.fetchone()[0]
+            if row_count > 0:
+                print(f"Database already initialized with {row_count} movies")
+                connection.close()
+                return
+        
+        # Create table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS movies (
+                title TEXT NOT NULL
+            )
+        """)
+        
+        print("Initializing database with movie data...")
+        
+        # Try to read from CSV file first
+        movies_added = 0
+        try:
+            with open('top500.csv', 'r', newline='', encoding='utf-8') as file:
+                reader = csv.reader(file, delimiter=',')
+                next(reader)  # Skip header row
+                
+                for row in reader:
+                    if len(row) > 1:  # Make sure row has enough columns
+                        title = row[1].strip()  # Movie title is in 2nd column
+                        if title:  # Only add non-empty titles
+                            cursor.execute("INSERT INTO movies (title) VALUES (?)", (title,))
+                            movies_added += 1
+                            
+            print(f"Successfully added {movies_added} movies from CSV file")
+            
+        except FileNotFoundError:
+            print("CSV file not found, adding fallback movies...")
+            # Fallback movie list if CSV is not available
+            fallback_movies = [
+                'Dangal', '3 Idiots', 'PK', 'Baahubali', 'Dhoom', 'Sholay', 'DDLJ', 'Lagaan',
+                'Kabhi Khushi Kabhie Gham', 'Kuch Kuch Hota Hai', 'Zindagi Na Milegi Dobara',
+                'Queen', 'Andhadhun', 'Article 15', 'Uri', 'Mission Mangal', 'Chhichhore',
+                'Badhaai Ho', 'Stree', 'Dream Girl', 'Housefull', 'Golmaal', 'Dhamaal',
+                'Welcome', 'Hera Pheri', 'Munna Bhai MBBS', 'Chak De India', 'Taare Zameen Par',
+                'My Name is Khan', 'Chennai Express', 'Happy New Year', 'Bajrangi Bhaijaan',
+                'Sultan', 'Tiger Zinda Hai', 'Padmaavat', 'Simmba', 'Kesari', 'Good Newwz'
+            ]
+            
+            for movie in fallback_movies:
+                cursor.execute("INSERT INTO movies (title) VALUES (?)", (movie,))
+                movies_added += 1
+                
+            print(f"Added {movies_added} fallback movies")
+        
+        connection.commit()
+        connection.close()
+        print("Database initialization completed successfully!")
+        
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        # Continue without database - the app will use demo songs
+
+# Initialize database on startup
+initialize_database()
 
 # --------------------------------------------------------------------------
 # Pydantic Models for API Requests
@@ -258,28 +336,8 @@ async def get_movie_suggestions(query: str) -> List[str]:
         return []
 
 async def get_quiz_song():
-    # Check if database exists
+    # Try to get from database first
     try:
-        connection = sqlite3.connect('movies.db')
-        cursor = connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='movies'")
-        if cursor.fetchone()[0] == 0:
-            # Create dummy data if table doesn't exist
-            cursor.execute("CREATE TABLE IF NOT EXISTS movies (title TEXT)")
-            cursor.execute("INSERT INTO movies (title) VALUES ('Dangal'), ('3 Idiots'), ('PK'), ('Baahubali'), ('Dhoom'), ('Sholay'), ('DDLJ'), ('Lagaan'), ('Kabhi Khushi Kabhie Gham'), ('Kuch Kuch Hota Hai')")
-            connection.commit()
-        connection.close()
-    except Exception as e:
-        print(f"Database error: {e}")
-        # Return dummy song if database fails
-        return {
-            "title": "Demo Song",
-            "movie": "Demo Movie",
-            "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-            "image": "https://via.placeholder.com/300x300?text=Demo+Album"
-        }
-    
-    for _ in range(20):
         connection = sqlite3.connect('movies.db')
         cursor = connection.cursor()
         cursor.execute("SELECT title FROM movies ORDER BY RANDOM() LIMIT 1")
@@ -313,14 +371,18 @@ async def get_quiz_song():
                         album_image = images[-1].get("url", "")
                 
                 if best_url:
+                    print(f"Found song: {chosen_song.get('name')} from {movie_title}")
                     return {
                         "title": chosen_song.get("name"), 
                         "movie": movie_title, 
                         "preview_url": best_url,
                         "image": album_image or "https://via.placeholder.com/300x300?text=No+Image"
                     }
+    except Exception as e:
+        print(f"Database error: {e}")
     
-    # Return demo song if no valid songs found
+    # Return demo song if database fails or no songs found
+    print("Using demo song as fallback")
     return {
         "title": "Demo Song",
         "movie": "Demo Movie", 
