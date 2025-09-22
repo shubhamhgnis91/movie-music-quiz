@@ -254,80 +254,36 @@
             font-size: 0.9rem;
         }
 
-        .game-layout {
+        /* Room Layout - Three Column Design */
+        .room-layout {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 30px;
+            grid-template-columns: 25% 55% 20%;
+            gap: 20px;
+            height: calc(100vh - 180px);
             margin: 20px 0;
         }
 
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .player-list {
+        /* Left Sidebar - Leaderboard */
+        .leaderboard-panel {
             background: var(--bg-white);
             border-radius: var(--border-radius);
             padding: 20px;
             box-shadow: var(--shadow);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
         }
 
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin: 10px 0;
-            background: var(--bg-light);
-            border-radius: 10px;
-            transition: var(--transition);
-        }
-
-        .player-item:hover {
-            background: #e3f2fd;
-        }
-
-        .player-info {
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-dark);
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .player-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
-
-        .status-ready {
-            color: var(--success-color);
-            font-weight: 600;
-        }
-
-        .status-not-ready {
-            color: var(--warning-color);
-            font-weight: 600;
-        }
-
-        .score-board {
-            background: var(--bg-white);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
         }
 
         .score-item {
@@ -340,6 +296,7 @@
             border-radius: 8px;
             position: relative;
             overflow: hidden;
+            transition: var(--transition);
         }
 
         .score-item::before {
@@ -356,6 +313,66 @@
         .score-item.second::before { background: #c0c0c0; }
         .score-item.third::before { background: #cd7f32; }
 
+        .score-item.highlight-correct {
+            background: linear-gradient(135deg, var(--success-color), #00cec9);
+            color: white;
+            animation: correctPulse 1.5s ease-in-out;
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.4);
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .player-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: var(--bg-light);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-ready {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-not-ready {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        /* Center Area - Game Display */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
         .round-indicator {
             background: linear-gradient(135deg, var(--warning-color), #f39c12);
             color: white;
@@ -364,16 +381,18 @@
             text-align: center;
             font-weight: 600;
             box-shadow: var(--shadow);
-            margin: 20px 0;
+            margin-bottom: 10px;
         }
 
         .game-display {
             background: var(--bg-white);
             border-radius: var(--border-radius);
-            padding: 20px;
+            padding: 30px;
             box-shadow: var(--shadow);
             text-align: center;
-            min-height: 300px;
+            min-height: 400px;
+            width: 100%;
+            max-width: 450px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -381,8 +400,8 @@
         }
 
         .mystery-box {
-            width: 200px;
-            height: 200px;
+            width: 250px;
+            height: 250px;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             border-radius: 20px;
             display: flex;
@@ -396,34 +415,44 @@
         }
 
         .album-reveal {
-            width: 250px;
-            height: 250px;
+            width: 280px;
+            height: 280px;
             border-radius: 20px;
             margin: 20px 0;
             box-shadow: var(--shadow-lg);
-            animation: fadeIn 0.5s ease-in-out;
+            animation: fadeIn 0.8s ease-in-out;
+            overflow: hidden;
+        }
+
+        .album-reveal img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
         }
 
         .song-info {
             margin-top: 20px;
             text-align: center;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
         }
 
         .song-info h3 {
             color: var(--primary-color);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
         }
 
         .song-info p {
             color: var(--text-light);
+            font-weight: 500;
         }
 
         .audio-player {
-            background: var(--bg-white);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            text-align: center;
+            margin: 20px 0;
+            width: 100%;
         }
 
         .audio-player audio {
@@ -457,20 +486,42 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .play-button:active {
-            transform: translateY(-1px);
-        }
-
-        .guess-section {
+        .guess-container {
             background: var(--bg-white);
             border-radius: var(--border-radius);
-            padding: 25px;
+            padding: 20px;
             box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 450px;
         }
 
-        .guess-input-wrapper {
-            position: relative;
-            margin: 15px 0;
+        .guess-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--bg-white);
+        }
+
+        .guess-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .guess-input:disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .guess-status {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .suggestions {
@@ -500,48 +551,102 @@
             color: var(--primary-color);
         }
 
+        /* Right Sidebar - Chat */
+        .chat-panel {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+        }
+
+        .notifications-panel {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 10px;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notifications-header {
+            background: linear-gradient(135deg, var(--warning-color), #f39c12);
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .notifications-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            max-height: 200px;
+        }
+
+        .notification-item {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 4px 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .notification-item.round-start {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(240, 147, 251, 0.1));
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .notification-item.correct {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(0, 206, 201, 0.1));
+            border-left: 3px solid var(--success-color);
+        }
+
+        .notification-item.wrong {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(229, 112, 85, 0.1));
+            border-left: 3px solid var(--danger-color);
+        }
+
         .chat-container {
             background: var(--bg-white);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
-            overflow: hidden;
+            flex: 1;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
         }
 
         .chat-header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 15px 20px;
+            padding: 12px 15px;
             font-weight: 600;
+            font-size: 0.9rem;
         }
 
         .chat-messages {
-            height: 350px;
+            flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 15px;
             background: var(--bg-light);
         }
 
         .message {
-            margin: 10px 0;
-            padding: 12px 15px;
-            border-radius: 15px;
-            max-width: 80%;
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 90%;
             word-wrap: break-word;
             animation: slideIn 0.3s ease-out;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         @keyframes slideIn {
             from { transform: translateX(-10px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
-        }
-
-        .message.system {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            color: var(--primary-color);
-            font-style: italic;
-            margin: 15px auto;
-            text-align: center;
-            border-radius: 20px;
         }
 
         .message.player {
@@ -559,24 +664,24 @@
 
         .message-sender {
             font-weight: 600;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
+            margin-bottom: 3px;
+            font-size: 0.8rem;
         }
 
         .chat-input {
             display: flex;
-            padding: 15px 20px;
+            padding: 12px 15px;
             background: var(--bg-white);
             border-top: 1px solid #e1e8ed;
-            gap: 10px;
+            gap: 8px;
         }
 
         .chat-input input {
             flex: 1;
-            padding: 12px 15px;
+            padding: 8px 12px;
             border: 1px solid #e1e8ed;
-            border-radius: 25px;
-            font-size: 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
         }
 
         .chat-input input:focus {
@@ -606,20 +711,8 @@
         .notification.error { border-left: 4px solid var(--danger-color); }
         .notification.info { border-left: 4px solid var(--primary-color); }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .hidden {
+            display: none !important;
         }
 
         .pulse {
@@ -628,11 +721,11 @@
 
         @keyframes pulse {
             0% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
 
-        /* Modal Styles */
+        /* Settings Modal */
         .modal {
             display: none;
             position: fixed;
@@ -747,50 +840,56 @@
             color: var(--text-light);
         }
 
-        .hidden {
-            display: none !important;
+        @media (max-width: 1200px) {
+            .room-layout {
+                grid-template-columns: 30% 50% 20%;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .room-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+            }
+            
+            .leaderboard-panel,
+            .chat-panel {
+                position: static;
+                height: auto;
+                max-height: 300px;
+            }
+
+            .chat-panel {
+                flex-direction: row;
+                gap: 10px;
+            }
+
+            .notifications-panel,
+            .chat-container {
+                flex: 1;
+                min-height: 200px;
+            }
         }
 
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
             }
-
+            
             .header h1 {
                 font-size: 2rem;
             }
-
-            .game-layout {
-                grid-template-columns: 1fr;
-                gap: 20px;
+            
+            .mystery-box,
+            .album-reveal {
+                width: 200px;
+                height: 200px;
             }
-
-            .room-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .card {
-                padding: 20px;
-                margin: 10px 0;
-            }
-
-            .chat-messages {
-                height: 250px;
-            }
-
+            
             .game-type-options {
                 flex-direction: column;
             }
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .divider {
@@ -799,25 +898,6 @@
             border-radius: 2px;
             margin: 30px 0;
         }
-
-        .icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        .status-indicator.online { background: var(--success-color); }
-        .status-indicator.offline { background: var(--text-light); }
     </style>
 </head>
 <body>
@@ -888,100 +968,107 @@
         <div id="room-view" class="view">
             <div class="header">
                 <h1>🎮 Room: <span id="roomIdSpan">LOADING</span></h1>
-                <p>Get ready for the ultimate music challenge!</p>
+                <div id="roundInfo" class="round-indicator" style="display: none;">
+                    <i class="fas fa-music"></i>
+                    Round <span id="currentRound">0</span> of <span id="totalRounds">10</span>
+                    <div class="pulse" style="display: inline-block; margin-left: 10px;">🎵</div>
+                </div>
             </div>
 
-            <div id="roundInfo" class="round-indicator" style="display: none;">
-                <i class="fas fa-music"></i>
-                Round <span id="currentRound">0</span> of <span id="totalRounds">10</span>
-                <div class="pulse" style="display: inline-block; margin-left: 10px;">🎵</div>
-            </div>
-
-            <!-- Game Display Area -->
-            <div class="game-display card">
-                <div class="section-title">
-                    <i class="fas fa-headphones"></i>
-                    <span id="gameDisplayTitle">Music Player</span>
-                </div>
-                
-                <!-- Audio Player (hidden during game) -->
-                <div id="audioPlayerSection">
-                    <audio id="audioPlayer" controls preload="none">
-                        Your browser does not support the audio element.
-                    </audio>
-                </div>
-                
-                <!-- Mystery Box (shown during round) -->
-                <div id="mysteryBox" class="mystery-box hidden">
-                    <i class="fas fa-question"></i>
-                </div>
-                
-                <!-- Manual Play Button (shown when autoplay fails) -->
-                <div id="manualPlaySection" class="manual-play-section hidden">
-                    <button id="manualPlayButton" class="play-button" onclick="playAudioManually()">
-                        <i class="fas fa-play"></i>
-                        Click to Play Song
-                    </button>
-                    <p style="color: var(--text-light); margin-top: 10px;">Browser blocked autoplay - click to start!</p>
-                </div>
-                
-                <!-- Album Reveal (shown after round) -->
-                <div id="albumReveal" class="hidden">
-                    <img id="albumImage" class="album-reveal" alt="Album Cover">
-                    <div class="song-info">
-                        <h3 id="songTitle">Song Title</h3>
-                        <p id="movieTitle">Movie Name</p>
+            <div class="room-layout">
+                <!-- Left Sidebar - Leaderboard & Players -->
+                <div class="leaderboard-panel">
+                    <div class="section-title">
+                        <i class="fas fa-trophy"></i>
+                        Leaderboard
                     </div>
-                </div>
-            </div>
+                    <div id="scoreBoard"></div>
 
-            <div class="game-layout">
-                <div class="sidebar">
-                    <div class="player-list">
+                    <div style="margin-top: 30px;">
                         <div class="section-title">
                             <i class="fas fa-users"></i>
                             Players
                         </div>
                         <div id="playerList"></div>
                     </div>
+                </div>
 
-                    <div class="score-board">
-                        <div class="section-title">
-                            <i class="fas fa-trophy"></i>
-                            Leaderboard
+                <!-- Center - Game Area -->
+                <div class="game-area">
+                    <!-- Game Display -->
+                    <div class="game-display">
+                        <!-- Audio Player (visible in lobby) -->
+                        <div id="audioPlayerSection" class="audio-player">
+                            <audio id="audioPlayer" controls preload="none">
+                                Your browser does not support the audio element.
+                            </audio>
                         </div>
-                        <div id="scoreBoard"></div>
+                        
+                        <!-- Mystery Box (shown during round) -->
+                        <div id="mysteryBox" class="mystery-box hidden">
+                            <i class="fas fa-question"></i>
+                        </div>
+                        
+                        <!-- Manual Play Button (shown when autoplay fails) -->
+                        <div id="manualPlaySection" class="manual-play-section hidden">
+                            <button id="manualPlayButton" class="play-button" onclick="playAudioManually()">
+                                <i class="fas fa-play"></i>
+                                Click to Play Song
+                            </button>
+                            <p style="color: var(--text-light); margin-top: 10px; font-size: 0.9rem;">Browser blocked autoplay - click to start!</p>
+                        </div>
+                        
+                        <!-- Album Reveal (shown after round) -->
+                        <div id="albumReveal" class="album-reveal hidden">
+                            <img id="albumImage" alt="Album Cover">
+                        </div>
+                        
+                        <!-- Song Info (shown after round) -->
+                        <div id="songInfo" class="song-info hidden">
+                            <h3 id="songTitle">Song Title</h3>
+                            <p id="movieTitle">Movie Name</p>
+                        </div>
+                    </div>
+
+                    <!-- Guess Container -->
+                    <div class="guess-container">
+                        <div style="position: relative;">
+                            <input type="text" id="guessInput" class="guess-input" 
+                                   placeholder="Type your movie guess and press Enter..."
+                                   onkeyup="handleGuessInput(event)">
+                            <div id="suggestions-list" class="suggestions"></div>
+                        </div>
+                        <div id="guessStatus" class="guess-status">
+                            <!-- Status messages will appear here -->
+                        </div>
                     </div>
                 </div>
 
-                <div class="main-content">
-                    <div class="guess-section">
-                        <div class="section-title">
-                            <i class="fas fa-lightbulb"></i>
-                            Make Your Guess
+                <!-- Right Sidebar - Notifications & Chat -->
+                <div class="chat-panel">
+                    <!-- Game Notifications -->
+                    <div class="notifications-panel">
+                        <div class="notifications-header">
+                            <i class="fas fa-bell"></i>
+                            Game Updates
                         </div>
-                        <div class="guess-input-wrapper">
-                            <div class="input-group">
-                                <input type="text" id="guessInput" placeholder=" " onkeyup="handleGuessInput(event)">
-                                <label>Which movie is this song from?</label>
-                            </div>
-                            <div id="suggestions-list" class="suggestions"></div>
+                        <div id="notificationsList" class="notifications-list">
+                            <!-- Game notifications will appear here -->
                         </div>
-                        <button class="btn btn-warning" onclick="submitGuess()">
-                            <i class="fas fa-paper-plane"></i>
-                            Submit Guess
-                        </button>
                     </div>
 
+                    <!-- Chat -->
                     <div class="chat-container">
                         <div class="chat-header">
                             <i class="fas fa-comments"></i>
-                            Game Chat
+                            Chat
                         </div>
-                        <div id="chatBox" class="chat-messages"></div>
+                        <div id="chatBox" class="chat-messages">
+                            <!-- Chat messages will appear here -->
+                        </div>
                         <div class="chat-input">
-                            <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter')sendChatMessage()">
-                            <button class="btn" onclick="sendChatMessage()">
+                            <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendChatMessage()">
+                            <button class="btn" onclick="sendChatMessage()" style="padding: 8px 12px;">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -1060,6 +1147,8 @@
         let roomId;
         let typingTimer;
         let currentRoundActive = false;
+        let hasSubmittedGuess = false;
+        let latestGuess = '';
         let isHost = false;
         let audioLoadedForRound = false;
         let gameSettings = {
@@ -1084,17 +1173,18 @@
         const roundInfo = document.getElementById('roundInfo');
         const currentRoundSpan = document.getElementById('currentRound');
         const totalRoundsSpan = document.getElementById('totalRounds');
+        const notificationsList = document.getElementById('notificationsList');
         
         // Game display elements
-        const gameDisplayTitle = document.getElementById('gameDisplayTitle');
         const audioPlayerSection = document.getElementById('audioPlayerSection');
         const mysteryBox = document.getElementById('mysteryBox');
         const manualPlaySection = document.getElementById('manualPlaySection');
-        const manualPlayButton = document.getElementById('manualPlayButton');
         const albumReveal = document.getElementById('albumReveal');
         const albumImage = document.getElementById('albumImage');
+        const songInfo = document.getElementById('songInfo');
         const songTitle = document.getElementById('songTitle');
         const movieTitle = document.getElementById('movieTitle');
+        const guessStatus = document.getElementById('guessStatus');
 
         // AUDIO FUNCTIONS
         function playAudioManually() {
@@ -1176,48 +1266,180 @@
             return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
         }
 
+        function addGameNotification(message, type = 'info') {
+            const notificationDiv = document.createElement('div');
+            let className = 'notification-item ';
+            
+            switch(type) {
+                case 'round_start':
+                    className += 'round-start';
+                    break;
+                case 'correct_guesses':
+                    className += 'correct';
+                    break;
+                case 'wrong_guesses':
+                    className += 'wrong';
+                    break;
+                default:
+                    className += 'round-start';
+            }
+            
+            notificationDiv.className = className;
+            notificationDiv.textContent = message;
+            notificationsList.appendChild(notificationDiv);
+            notificationsList.scrollTop = notificationsList.scrollHeight;
+            
+            // Keep only last 20 notifications
+            while (notificationsList.children.length > 20) {
+                notificationsList.removeChild(notificationsList.firstChild);
+            }
+        }
+
+        function highlightCorrectPlayer(playerName) {
+            // Find and highlight the player in leaderboard
+            const scoreItems = document.querySelectorAll('.score-item');
+            scoreItems.forEach(item => {
+                const nameElement = item.querySelector('.player-name');
+                if (nameElement && nameElement.textContent.includes(playerName)) {
+                    item.classList.add('highlight-correct');
+                    setTimeout(() => {
+                        item.classList.remove('highlight-correct');
+                    }, 2000);
+                }
+            });
+        }
+
         // GAME DISPLAY FUNCTIONS
         function showAudioPlayer() {
-            gameDisplayTitle.textContent = 'Music Player';
             audioPlayerSection.classList.remove('hidden');
             mysteryBox.classList.add('hidden');
             manualPlaySection.classList.add('hidden');
             albumReveal.classList.add('hidden');
+            songInfo.classList.add('hidden');
         }
 
         function showMysteryBox() {
-            gameDisplayTitle.textContent = 'Listen Carefully...';
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.remove('hidden');
             albumReveal.classList.add('hidden');
+            songInfo.classList.add('hidden');
             // manualPlaySection visibility handled by audio loading logic
         }
 
-        function showAlbumReveal(songData) {
-            gameDisplayTitle.textContent = 'Answer Revealed!';
+        function showAlbumReveal(albumImageUrl, songTitle, movieName) {
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.add('hidden');
             manualPlaySection.classList.add('hidden');
-            albumReveal.classList.remove('hidden');
             
-            if (songData.image) {
-                albumImage.src = songData.image;
+            if (albumImageUrl) {
+                albumImage.src = albumImageUrl;
+                albumReveal.classList.remove('hidden');
             }
-            if (songData.title) {
-                songTitle.textContent = songData.title;
+            
+            if (songTitle || movieName) {
+                if (songTitle) songTitle.textContent = songTitle;
+                if (movieName) movieTitle.textContent = `From "${movieName}"`;
+                songInfo.classList.remove('hidden');
             }
-            if (songData.movie) {
-                movieTitle.textContent = `From "${songData.movie}"`;
+        }
+
+        // REST OF THE JAVASCRIPT CODE CONTINUES...
+        // (Due to length limitations, I'll provide the rest in the next part)
+
+        // GUESS HANDLING
+        function handleGuessInput(event) {
+            if (!currentRoundActive) {
+                guessStatus.textContent = 'Wait for the next round to start!';
+                guessStatus.style.color = 'var(--warning-color)';
+                return;
             }
+            
+            clearTimeout(typingTimer);
+            const query = event.target.value.trim();
+            latestGuess = query;
+            
+            if (hasSubmittedGuess) {
+                guessStatus.textContent = '✓ Guess submitted!';
+                guessStatus.style.color = 'var(--success-color)';
+                return;
+            }
+            
+            if (query) {
+                guessStatus.textContent = 'Type your guess...';
+                guessStatus.style.color = 'var(--primary-color)';
+            } else {
+                guessStatus.textContent = '';
+            }
+            
+            if (query.length >= 2) {
+                typingTimer = setTimeout(() => {
+                    requestSuggestions(query);
+                }, 300);
+            } else {
+                hideSuggestions();
+            }
+            
+            // Submit on Enter
+            if (event.key === 'Enter' && query && !hasSubmittedGuess) {
+                submitGuess();
+            }
+        }
+
+        function submitGuess() {
+            const guess = latestGuess || guessInput.value.trim();
+            if (!guess || hasSubmittedGuess || !currentRoundActive) return;
+            
+            sendMessage({ action: 'guess', text: guess });
+            hasSubmittedGuess = true;
+            guessInput.disabled = true;
+            guessStatus.textContent = '✓ Guess submitted!';
+            guessStatus.style.color = 'var(--success-color)';
+            hideSuggestions();
+        }
+
+        function autoSubmitGuess() {
+            if (currentRoundActive && !hasSubmittedGuess && latestGuess) {
+                submitGuess();
+            }
+        }
+
+        function requestSuggestions(query) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'get_suggestions', query: query }));
+            }
+        }
+
+        function showSuggestions(suggestions) {
+            suggestionsDiv.innerHTML = '';
+            if (suggestions.length > 0 && !hasSubmittedGuess) {
+                suggestions.forEach(suggestion => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `<i class="fas fa-film" style="margin-right: 8px; color: var(--primary-color);"></i>${suggestion}`;
+                    div.onclick = () => {
+                        if (!hasSubmittedGuess) {
+                            guessInput.value = suggestion;
+                            latestGuess = suggestion;
+                            hideSuggestions();
+                        }
+                    };
+                    suggestionsDiv.appendChild(div);
+                });
+                suggestionsDiv.style.display = 'block';
+            } else {
+                hideSuggestions();
+            }
+        }
+
+        function hideSuggestions() {
+            suggestionsDiv.style.display = 'none';
         }
 
         // SETTINGS MODAL FUNCTIONS
         function showSettingsModal() {
-            // Load current settings
             document.getElementById('totalRoundsInput').value = gameSettings.total_rounds;
             document.getElementById('musicDurationInput').value = gameSettings.music_duration;
             
-            // Update game type selection
             document.querySelectorAll('.game-type-option').forEach(option => {
                 option.classList.remove('selected');
                 if (option.dataset.type === gameSettings.game_type) {
@@ -1253,7 +1475,6 @@
                 game_type: gameType
             };
             
-            // Send settings to server
             if (ws && ws.readyState === WebSocket.OPEN) {
                 sendMessage({
                     action: 'update_settings',
@@ -1301,71 +1522,21 @@
             const messageDiv = document.createElement('div');
             const isSystem = playerName === 'System';
             
-            if (isSystem) {
-                messageDiv.className = 'message system';
-                messageDiv.innerHTML = `<i class="fas fa-robot" style="margin-right: 8px;"></i>${text}`;
-            } else {
+            if (!isSystem) {
                 messageDiv.className = `message player ${isOwn ? 'own' : ''}`;
                 messageDiv.innerHTML = `
                     <div class="message-sender">
-                        <div class="player-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; margin-right: 8px;">
+                        <div class="player-avatar" style="width: 20px; height: 20px; font-size: 0.6rem; margin-right: 6px; display: inline-flex;">
                             ${getPlayerInitials(playerName)}
                         </div>
                         ${playerName}
                     </div>
                     <div>${text}</div>
                 `;
+                
+                chatBox.appendChild(messageDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
             }
-            
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        // AUTOCOMPLETE FUNCTIONS
-        function handleGuessInput(event) {
-            clearTimeout(typingTimer);
-            const query = event.target.value;
-            
-            if (query.length >= 2) {
-                typingTimer = setTimeout(() => {
-                    requestSuggestions(query);
-                }, 300);
-            } else {
-                hideSuggestions();
-            }
-            
-            if (event.key === 'Enter') {
-                submitGuess();
-            }
-        }
-
-        function requestSuggestions(query) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ action: 'get_suggestions', query: query }));
-            }
-        }
-
-        function showSuggestions(suggestions) {
-            suggestionsDiv.innerHTML = '';
-            if (suggestions.length > 0) {
-                suggestions.forEach(suggestion => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    div.innerHTML = `<i class="fas fa-film" style="margin-right: 8px; color: var(--primary-color);"></i>${suggestion}`;
-                    div.onclick = () => {
-                        guessInput.value = suggestion;
-                        hideSuggestions();
-                    };
-                    suggestionsDiv.appendChild(div);
-                });
-                suggestionsDiv.style.display = 'block';
-            } else {
-                hideSuggestions();
-            }
-        }
-
-        function hideSuggestions() {
-            suggestionsDiv.style.display = 'none';
         }
 
         // API & WEBSOCKET LOGIC
@@ -1483,9 +1654,9 @@
             ws.onopen = () => {
                 console.log("Connected to room " + roomId);
                 showView('room-view');
-                showAudioPlayer(); // Show audio player by default
+                showAudioPlayer();
                 showNotification(`Connected to room ${roomId}`, 'success');
-                addChatMessage("System", `Welcome to room ${roomId}! 🎉`);
+                addGameNotification(`Welcome to room ${roomId}! 🎉`, 'round_start');
             };
 
             ws.onmessage = (event) => {
@@ -1497,32 +1668,61 @@
                 } else if (message.action === "chat_message") {
                     const isOwn = message.player_name === playerName && message.player_name !== 'System';
                     addChatMessage(message.player_name, message.text, isOwn);
+                } else if (message.action === "game_notification") {
+                    addGameNotification(message.message, message.type);
+                    if (message.type === 'correct_guesses' && message.correct_players) {
+                        message.correct_players.forEach(playerName => {
+                            highlightCorrectPlayer(playerName);
+                        });
+                    }
                 } else if (message.action === "suggestions") {
                     showSuggestions(message.suggestions);
                 } else if (message.action === "guess_result") {
                     if (message.correct) {
-                        showNotification(`${message.player_name} guessed correctly! 🎉 (+${message.points_earned} points)`, 'success');
+                        guessStatus.textContent = `✓ Correct! +${message.points_earned} points`;
+                        guessStatus.style.color = 'var(--success-color)';
+                    } else {
+                        guessStatus.textContent = '❌ Wrong answer';
+                        guessStatus.style.color = 'var(--danger-color)';
                     }
                 } else if (message.action === "round_start") {
                     currentRoundActive = true;
+                    hasSubmittedGuess = false;
+                    latestGuess = '';
+                    
                     showMysteryBox();
                     guessInput.disabled = false;
-                    guessInput.placeholder = 'Which movie is this song from?';
+                    guessInput.value = '';
+                    guessStatus.textContent = 'Listen carefully and type your guess!';
+                    guessStatus.style.color = 'var(--primary-color)';
+                    
+                    // Auto-submit after duration - 1 second
+                    setTimeout(() => {
+                        autoSubmitGuess();
+                    }, (gameSettings.music_duration - 1) * 1000);
                 } else if (message.action === "round_end") {
                     currentRoundActive = false;
                     audioPlayer.pause();
                     manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
-                    guessInput.placeholder = 'Round ended, please wait...';
-                    showNotification(`Round ended! Correct answer: ${message.correct_answer}`, 'info');
+                    
+                    // Show album reveal if image provided
+                    if (message.album_image) {
+                        showAlbumReveal(message.album_image, message.song_title, message.correct_answer);
+                    }
+                    
+                    if (!hasSubmittedGuess) {
+                        guessStatus.textContent = `⏰ Time's up! Answer: ${message.correct_answer}`;
+                        guessStatus.style.color = 'var(--warning-color)';
+                    }
                 } else if (message.action === "game_over") {
                     currentRoundActive = false;
                     audioPlayer.pause();
                     manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
-                    guessInput.placeholder = 'Game finished!';
-                    showAudioPlayer(); // Return to audio player view
-                    showNotification('Game Over! 🏆 Check the final leaderboard!', 'success');
+                    guessStatus.textContent = 'Game finished!';
+                    guessStatus.style.color = 'var(--info-color)';
+                    showAudioPlayer();
                 } else if (message.action === "settings_updated") {
                     gameSettings = message.settings;
                     showNotification('Game settings updated!', 'info');
@@ -1548,7 +1748,6 @@
             roomIdSpan.textContent = state.room_id;
             isHost = (clientId === state.host_id);
             
-            // Update game settings
             gameSettings.total_rounds = state.total_rounds;
             gameSettings.music_duration = state.music_duration;
             gameSettings.game_type = state.game_type;
@@ -1559,9 +1758,8 @@
                 currentRoundSpan.textContent = state.current_round;
                 totalRoundsSpan.textContent = state.total_rounds;
                 
-                // Handle game display based on phase
-                if (state.is_reveal_phase && state.current_song) {
-                    showAlbumReveal(state.current_song);
+                if (state.is_reveal_phase && state.current_song && state.current_song.image) {
+                    showAlbumReveal(state.current_song.image, state.current_song.title, state.current_song.movie);
                 } else if (state.is_round_active) {
                     showMysteryBox();
                 }
@@ -1585,28 +1783,28 @@
                 
                 let actions = '';
                 if (isHost && !isMe && !state.is_game_active) {
-                    actions += `<button class="btn btn-danger" onclick="kickPlayer(${p.id})" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fas fa-user-times"></i></button>`;
+                    actions += `<button class="btn btn-danger" onclick="kickPlayer(${p.id})" style="padding: 6px 10px; font-size: 0.8rem;"><i class="fas fa-user-times"></i></button>`;
                 }
                 if (isMe && !isHost && !state.is_game_active) {
-                    const readyAction = p.is_ready ? 'Unready' : 'Ready Up';
+                    const readyAction = p.is_ready ? 'Unready' : 'Ready';
                     const readyIcon = p.is_ready ? 'times' : 'check';
-                    actions += `<button class="btn btn-outline" onclick="setReady(${!p.is_ready})" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fas fa-${readyIcon}"></i> ${readyAction}</button>`;
+                    actions += `<button class="btn btn-outline" onclick="setReady(${!p.is_ready})" style="padding: 6px 10px; font-size: 0.8rem;"><i class="fas fa-${readyIcon}"></i> ${readyAction}</button>`;
                 }
                 if (isMe && isHost && !state.is_game_active) {
-                    actions += `<button class="btn btn-outline" onclick="showSettingsModal()" style="padding: 8px 15px; font-size: 0.8rem; margin-right: 5px;"><i class="fas fa-cog"></i> Settings</button>`;
-                    actions += `<button class="btn btn-success" onclick="startGame()" style="padding: 8px 15px; font-size: 0.9rem;"><i class="fas fa-play"></i> Start Game</button>`;
+                    actions += `<button class="btn btn-outline" onclick="showSettingsModal()" style="padding: 6px 10px; font-size: 0.8rem; margin-right: 5px;"><i class="fas fa-cog"></i></button>`;
+                    actions += `<button class="btn btn-success" onclick="startGame()" style="padding: 6px 12px; font-size: 0.8rem;"><i class="fas fa-play"></i> Start</button>`;
                 }
                 
                 playerEl.innerHTML = `
                     <div class="player-info">
                         <div class="player-avatar">${getPlayerInitials(p.name)}</div>
                         <div>
-                            <div style="font-weight: 600;">
+                            <div style="font-weight: 600; font-size: 0.9rem;">
                                 ${p.name} 
                                 ${isHostPlayer ? '<i class="fas fa-crown" style="color: #ffd700; margin-left: 5px;"></i>' : ''}
-                                ${isMe ? '<span style="color: var(--primary-color); font-size: 0.8rem; margin-left: 5px;">(You)</span>' : ''}
+                                ${isMe ? '<span style="color: var(--primary-color); font-size: 0.7rem; margin-left: 5px;">(You)</span>' : ''}
                             </div>
-                            <div class="${statusClass}" style="font-size: 0.9rem;">
+                            <div class="${statusClass}" style="font-size: 0.8rem;">
                                 <i class="fas fa-${statusIcon}"></i> ${statusText}
                             </div>
                         </div>
@@ -1629,8 +1827,8 @@
                 scoreBoard.innerHTML = `
                     <div style="text-align: center; color: var(--text-light); padding: 20px;">
                         <i class="fas fa-trophy" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        <p>Scores will appear here once the game starts!</p>
-                        <p style="font-size: 0.9rem; margin-top: 10px;">${gameTypeDesc}</p>
+                        <p style="margin-bottom: 10px;">Scores will appear here once the game starts!</p>
+                        <p style="font-size: 0.85rem;">${gameTypeDesc}</p>
                     </div>
                 `;
             } else {
@@ -1653,20 +1851,20 @@
                         rankClass = 'third';
                         rankIcon = '<i class="fas fa-medal" style="color: #cd7f32; margin-right: 8px;"></i>';
                     } else {
-                        rankIcon = `<span style="margin-right: 8px; font-weight: bold;">${index + 1}.</span>`;
+                        rankIcon = `<span style="margin-right: 8px; font-weight: bold; font-size: 0.9rem;">${index + 1}.</span>`;
                     }
                     
                     scoreEl.className = `score-item ${rankClass}`;
                     scoreEl.innerHTML = `
                         <div style="display: flex; align-items: center;">
                             ${rankIcon}
-                            <div class="player-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; margin-right: 10px;">
+                            <div class="player-avatar" style="width: 28px; height: 28px; font-size: 0.7rem; margin-right: 8px;">
                                 ${getPlayerInitials(pName)}
                             </div>
-                            <span style="font-weight: 500;">${pName}</span>
+                            <span class="player-name" style="font-weight: 500; font-size: 0.9rem;">${pName}</span>
                         </div>
-                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">
-                            ${score} pts
+                        <div style="font-weight: 600; font-size: 1rem; color: var(--primary-color);">
+                            ${score}
                         </div>
                     `;
                     
@@ -1674,7 +1872,7 @@
                 });
             }
             
-            // Handle audio - Load and play when round starts
+            // Handle audio
             if (state.current_song && state.current_song.preview_url && state.is_round_active) {
                 if (audioPlayer.src !== state.current_song.preview_url) {
                     console.log('Loading new audio:', state.current_song.preview_url);
@@ -1686,7 +1884,6 @@
                     });
                 }
             } else if (state.current_song && state.current_song.preview_url) {
-                // Just load the audio source for non-active rounds
                 if (audioPlayer.src !== state.current_song.preview_url) {
                     audioPlayer.src = state.current_song.preview_url;
                 }
@@ -1713,20 +1910,6 @@
         function kickPlayer(playerId) { 
             if (confirm('Are you sure you want to kick this player?')) {
                 sendMessage({ action: 'kick_player', player_id: playerId }); 
-            }
-        }
-        
-        function submitGuess() { 
-            const guess = guessInput.value.trim();
-            if (guess && currentRoundActive) {
-                sendMessage({ action: 'guess', text: guess }); 
-                guessInput.value = '';
-                hideSuggestions();
-                showNotification('Guess submitted! 🤞', 'info');
-            } else if (!currentRoundActive) {
-                showNotification('Wait for the next round to start!', 'warning');
-            } else {
-                showNotification('Please enter a movie name!', 'warning');
             }
         }
         
@@ -1757,8 +1940,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             showView('home-view');
             loadPublicRooms();
-            
-            // Auto-focus name input
             playerNameInput.focus();
         });
 
