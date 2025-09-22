@@ -362,11 +362,11 @@ async def game_loop(room_id: str):
             room.current_round += 1
             room.start_round()  # Start the round with timing
             
-            # Announce new round
+            # Send game notification (not chat)
             await broadcast_message(room_id, {
-                "action": "chat_message",
-                "player_name": "System",
-                "text": f"🎵 Round {room.current_round}/{room.total_rounds} starting! Listen carefully..."
+                "action": "game_notification",
+                "type": "round_start",
+                "message": f"🎵 Round {room.current_round}/{room.total_rounds} starting! Listen carefully..."
             })
             
             # Send round start signal
@@ -385,47 +385,72 @@ async def game_loop(room_id: str):
             # End the guessing phase and start reveal phase
             room.start_reveal_phase()
             
-            # Send round end signal with reveal
+            # Send round end signal with reveal data
             await broadcast_message(room_id, {
                 "action": "round_end", 
                 "correct_answer": room.current_song.get("movie"), 
+                "song_title": room.current_song.get("title"),
+                "album_image": room.current_song.get("image"),
                 "scores": room.scores
             })
             
             await broadcast_room_state(room_id)  # This will now include the album image
             
-            # Send round results to chat
+            # Send game notification for round end
             correct_answer = room.current_song.get("movie", "Unknown")
             await broadcast_message(room_id, {
-                "action": "chat_message",
-                "player_name": "System",
-                "text": f"⏰ Time's up! The correct answer was: {correct_answer}"
+                "action": "game_notification",
+                "type": "round_end",
+                "message": f"⏰ Time's up! The correct answer was: {correct_answer}"
             })
             
-            # List who guessed correctly with their timing for speed mode
+            # Send individual guess results as game notifications
             correct_guessers = []
+            wrong_guessers = []
+            
             for pid in room.players_who_guessed:
                 player_obj = room.players.get(pid)
-                if player_obj and pid in room.scores:
+                if player_obj:
                     player_name = player_obj.name
-                    if room.game_type == "speed" and pid in room.guess_times:
-                        time_taken = round(room.guess_times[pid], 2)
-                        correct_guessers.append(f"{player_name} ({time_taken}s)")
+                    # Check if this player got it right by looking at score increase
+                    if pid in room.scores and room.scores[pid] > 0:
+                        if room.game_type == "speed" and pid in room.guess_times:
+                            time_taken = round(room.guess_times[pid], 2)
+                            points_earned = max(5, 20 - int(room.guess_times[pid] * 2))
+                            correct_guessers.append((player_name, points_earned, time_taken))
+                        else:
+                            correct_guessers.append((player_name, 10, None))
                     else:
-                        correct_guessers.append(player_name)
+                        wrong_guessers.append(player_name)
             
+            # Send correct guesses notification
             if correct_guessers:
-                timing_text = " with times" if room.game_type == "speed" else ""
+                if room.game_type == "speed":
+                    guess_details = [f"{name} (+{points} pts, {time}s)" if time else f"{name} (+{points} pts)" 
+                                   for name, points, time in correct_guessers]
+                else:
+                    guess_details = [f"{name} (+{points} pts)" for name, points, time in correct_guessers]
+                
                 await broadcast_message(room_id, {
-                    "action": "chat_message",
-                    "player_name": "System",
-                    "text": f"✅ Correct guesses{timing_text}: {', '.join(correct_guessers)}"
+                    "action": "game_notification",
+                    "type": "correct_guesses",
+                    "message": f"✅ Correct: {', '.join(guess_details)}",
+                    "correct_players": [name for name, _, _ in correct_guessers]
                 })
-            else:
+            
+            # Send wrong guesses notification  
+            if wrong_guessers:
                 await broadcast_message(room_id, {
-                    "action": "chat_message",
-                    "player_name": "System",
-                    "text": "❌ Nobody guessed correctly this round!"
+                    "action": "game_notification",
+                    "type": "wrong_guesses",
+                    "message": f"❌ Wrong: {', '.join(wrong_guessers)}"
+                })
+            
+            if not correct_guessers and not wrong_guessers:
+                await broadcast_message(room_id, {
+                    "action": "game_notification",
+                    "type": "no_guesses",
+                    "message": "🤷 Nobody made a guess this round!"
                 })
             
             # Wait before next round (reveal phase duration)
@@ -444,9 +469,9 @@ async def game_loop(room_id: str):
         winner_score = room.scores[winner_id]
         
         await broadcast_message(room_id, {
-            "action": "chat_message",
-            "player_name": "System",
-            "text": f"🏆 Game Over! Winner: {winner_name} with {winner_score} points!"
+            "action": "game_notification",
+            "type": "game_over",
+            "message": f"🏆 Game Over! Winner: {winner_name} with {winner_score} points!"
         })
     
     await broadcast_message(room_id, {"action": "game_over", "leaderboard": room.scores})
@@ -556,28 +581,12 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: int,
                         else:
                             points_earned = 10
                     
-                    await broadcast_message(room_id, {
+                    # Send individual guess result (not broadcast)
+                    await websocket.send_text(json.dumps({
                         "action": "guess_result", 
-                        "player_name": player_name, 
                         "correct": guess_correct,
                         "points_earned": points_earned
-                    })
-                    
-                    # Send guess result to chat with speed info if applicable
-                    if guess_correct:
-                        if room.game_type == "speed":
-                            time_taken = round(room.guess_times.get(client_id, 0), 2)
-                            await broadcast_message(room_id, {
-                                "action": "chat_message",
-                                "player_name": "System",
-                                "text": f"✅ {player_name} guessed correctly in {time_taken}s! (+{points_earned} points)"
-                            })
-                        else:
-                            await broadcast_message(room_id, {
-                                "action": "chat_message",
-                                "player_name": "System",
-                                "text": f"✅ {player_name} guessed correctly! (+{points_earned} points)"
-                            })
+                    }))
                     
                     await broadcast_room_state(room_id)
                     
