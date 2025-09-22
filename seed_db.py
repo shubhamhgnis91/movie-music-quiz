@@ -18,7 +18,7 @@ cursor.execute("""
 # --- 2. READ AND INSERT THE DATA ---
 
 # Open the TSV file for reading
-with open('top1000.csv', 'r', newline='', encoding='utf-8') as file:
+with open('top500.csv', 'r', newline='', encoding='utf-8') as file:
     reader = csv.reader(file, delimiter=',')
     next(reader)  # Skip the header row
 
