@@ -3,35 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <title>Movie Music Quiz</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        .view { display: none; }
+        #home-view { display: block; }
+        #room-view { display: none; }
+        #chatBox { 
+            height: 300px; 
+            border: 1px solid #ccc; 
+            overflow-y: scroll; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            background-color: #f9f9f9;
+        }
+        .chat-message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .system-message {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            font-style: italic;
+        }
+        .player-message {
+            background-color: #fff;
+        }
+        .player-list-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 5px; 
+            border-bottom: 1px solid #eee; 
+        }
+        .player-list-item button { margin-left: 10px; }
+        .ready { color: green; font-weight: bold; }
+        .not-ready { color: orange; }
+        .round-info {
+            background-color: #fff3e0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        #suggestions-list {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Movie Music Quiz</h1>
-    <button id="getSongBtn" onclick="getSong()">Get New Song</button>
-    <hr>
-    <audio id="audioPlayer" controls></audio>
+
+    <div id="home-view" class="view">
+        <h1>Movie Music Quiz Lobby</h1>
+        <div>
+            <input type="text" id="playerNameInput" placeholder="Enter Your Name" required>
+        </div>
+        <hr>
+        <div>
+            <h2>Create a New Room</h2>
+            <input type="text" id="passwordInput" placeholder="Password (optional)">
+            <button onclick="createRoom()">Create Room</button>
+        </div>
+        <hr>
+        <div>
+            <h2>Public Rooms</h2>
+            <div id="publicRoomsList">Loading rooms...</div>
+        </div>
+    </div>
+
+    <div id="room-view" class="view">
+        <h1>Room ID: <span id="roomIdSpan"></span></h1>
+        <div id="roundInfo" class="round-info" style="display: none;">
+            Round <span id="currentRound">0</span> of <span id="totalRounds">10</span>
+        </div>
+        <audio id="audioPlayer" controls></audio>
+        <hr>
+        <div style="display: flex; gap: 2em;">
+            <div style="flex: 1;">
+                <h2>Players</h2>
+                <div id="playerList"></div>
+                <h2>Scores</h2>
+                <div id="scoreBoard"></div>
+            </div>
+            <div style="flex: 2;">
+                <h2>Game Actions</h2>
+                <div style="position: relative;">
+                    <input type="text" id="guessInput" placeholder="Type your movie guess..." onkeyup="handleGuessInput(event)">
+                    <div id="suggestions-list"></div>
+                    <button onclick="submitGuess()">Submit Guess</button>
+                </div>
+                <hr>
+                <h2>Chat</h2>
+                <div id="chatBox"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="chatInput" placeholder="Type a message..." style="flex: 1;" onkeypress="if(event.key==='Enter')sendChatMessage()">
+                    <button onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        function getSong() {
-            console.log("Fetching a new song...");
-            fetch('http://127.0.0.1:8000/get_quiz_song')
-                .then(response => response.json())
-                .then(songData => {
-                    console.log(songData);
+        // STATE VARIABLES
+        let ws;
+        let clientId;
+        let playerName;
+        let roomId;
+        let typingTimer;
+        let currentRoundActive = false;
 
-                    // --- 1. Get the audio player element ---
-                    const audioPlayer = document.getElementById('audioPlayer');
+        // DOM ELEMENTS
+        const views = document.querySelectorAll('.view');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const publicRoomsList = document.getElementById('publicRoomsList');
+        const roomIdSpan = document.getElementById('roomIdSpan');
+        const playerList = document.getElementById('playerList');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const guessInput = document.getElementById('guessInput');
+        const chatBox = document.getElementById('chatBox');
+        const chatInput = document.getElementById('chatInput');
+        const suggestionsDiv = document.getElementById('suggestions-list');
+        const roundInfo = document.getElementById('roundInfo');
+        const currentRoundSpan = document.getElementById('currentRound');
+        const totalRoundsSpan = document.getElementById('totalRounds');
 
-                    // --- 2. Set its source to the preview URL ---
-                    audioPlayer.src = songData.preview_url;
-
-                    // --- 3. Tell it to play ---
-                    audioPlayer.play();
-                })
-                .catch(error => {
-                    // It's good practice to log any errors
-                    console.error('Error fetching song:', error);
-                });
+        // VIEW MANAGEMENT
+        function showView(viewId) {
+            views.forEach(view => {
+                view.style.display = view.id === viewId ? 'block' : 'none';
+            });
         }
+
+        // CHAT FUNCTIONS
+        function addChatMessage(playerName, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = playerName === 'System' ? 'chat-message system-message' : 'chat-message player-message';
+            messageDiv.innerHTML = `<strong>${playerName}:</strong> ${text}`;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // AUTOCOMPLETE FUNCTIONS
+        function handleGuessInput(event) {
+            clearTimeout(typingTimer);
+            const query = event.target.value;
+            
+            if (query.length >= 2) {
+                typingTimer = setTimeout(() => {
+                    requestSuggestions(query);
+                }, 300);
+            } else {
+                hideSuggestions();
+            }
+            
+            if (event.key === 'Enter') {
+                submitGuess();
+            }
+        }
+
+        function requestSuggestions(query) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'get_suggestions', query: query }));
+            }
+        }
+
+        function showSuggestions(suggestions) {
+            suggestionsDiv.innerHTML = '';
+            if (suggestions.length > 0) {
+                suggestions.forEach(suggestion => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.textContent = suggestion;
+                    div.onclick = () => {
+                        guessInput.value = suggestion;
+                        hideSuggestions();
+                    };
+                    suggestionsDiv.appendChild(div);
+                });
+                suggestionsDiv.style.display = 'block';
+            } else {
+                hideSuggestions();
+            }
+        }
+
+        function hideSuggestions() {
+            suggestionsDiv.style.display = 'none';
+        }
+
+        // API & WEBSOCKET LOGIC
+        async function loadPublicRooms() {
+            try {
+                const response = await fetch('/api/rooms');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const rooms = await response.json();
+                publicRoomsList.innerHTML = '';
+                if (rooms.length === 0) {
+                    publicRoomsList.innerHTML = '<p>No public rooms available. Create one!</p>';
+                } else {
+                    rooms.forEach(room => {
+                        const roomEl = document.createElement('div');
+                        roomEl.innerHTML = `<span>${room.host_name}'s Room (${room.player_count} players)</span> <button onclick="joinRoom('${room.room_id}')">Join</button>`;
+                        publicRoomsList.appendChild(roomEl);
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load rooms:", error);
+                publicRoomsList.innerHTML = '<p>Error loading rooms. Is the server running correctly?</p>';
+            }
+        }
+
+        async function createRoom() {
+            if (!playerNameInput.value) { alert("Please enter your name."); return; }
+            playerName = playerNameInput.value;
+
+            try {
+                const response = await fetch('/api/rooms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host_name: playerName, password: passwordInput.value })
+                });
+                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                clientId = data.host_id;
+                joinRoom(data.room_id);
+            } catch (error) {
+                console.error("Failed to create room:", error);
+                alert("Could not create room. Check server logs.");
+            }
+        }
+
+        function joinRoom(newRoomId) {
+            if (!playerNameInput.value && !playerName) { alert("Please enter your name."); return; }
+            playerName = playerNameInput.value || playerName;
+            roomId = newRoomId;
+            clientId = clientId || Math.floor(Math.random() * 10000);
+
+            const encodedPlayerName = encodeURIComponent(playerName);
+            const wsUrl = `ws://${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
+            console.log("Connecting to WebSocket:", wsUrl);
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log("Connected to room " + roomId);
+                showView('room-view');
+                addChatMessage("System", `Welcome to room ${roomId}!`);
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log("Server message:", message);
+                
+                if (message.action === "update_state") {
+                    renderRoom(message.state);
+                } else if (message.action === "chat_message") {
+                    addChatMessage(message.player_name, message.text);
+                } else if (message.action === "suggestions") {
+                    showSuggestions(message.suggestions);
+                } else if (message.action === "round_end") {
+                    currentRoundActive = false;
+                    audioPlayer.pause();
+                    guessInput.disabled = true;
+                    setTimeout(() => {
+                        guessInput.disabled = false;
+                        guessInput.value = '';
+                    }, 10000);
+                } else if (message.action === "game_over") {
+                    currentRoundActive = false;
+                    audioPlayer.pause();
+                    guessInput.disabled = true;
+                    addChatMessage("System", "Game Over! Check the final scores!");
+                }
+            };
+
+            ws.onclose = (event) => {
+                console.error("WebSocket closed:", event);
+                alert("Connection to room lost. Reason: " + (event.reason || "Unknown error"));
+                showView('home-view');
+                loadPublicRooms();
+            };
+            
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+            };
+        }
+        
+        function renderRoom(state) {
+            roomIdSpan.textContent = state.room_id;
+            
+            // Update round info
+            if (state.is_game_active) {
+                roundInfo.style.display = 'block';
+                currentRoundSpan.textContent = state.current_round;
+                totalRoundsSpan.textContent = state.total_rounds;
+                currentRoundActive = true;
+            } else {
+                roundInfo.style.display = 'none';
+                currentRoundActive = false;
+            }
+            
+            // Update player list
+            playerList.innerHTML = '';
+            state.players.forEach(p => {
+                const isHost = p.id === state.host_id;
+                const isMe = p.id === clientId;
+                const readyStatus = p.is_ready ? '<span class="ready">Ready</span>' : '<span class="not-ready">Not Ready</span>';
+                let playerHtml = `<div class="player-list-item"><span>${p.name} ${isHost ? '(Host)' : ''} - ${readyStatus}</span><div>`;
+                if (isHost && !isMe && !state.is_game_active) { 
+                    playerHtml += `<button onclick="kickPlayer(${p.id})">Kick</button>`; 
+                }
+                if (isMe && !isHost && !state.is_game_active) { 
+                    playerHtml += `<button onclick="setReady(${!p.is_ready})">${p.is_ready ? 'Unready' : 'Ready Up'}</button>`;
+                }
+                if (isMe && isHost && !state.is_game_active) { 
+                    playerHtml += `<button onclick="startGame()">Start Game</button>`;
+                }
+                playerHtml += `</div></div>`;
+                playerList.innerHTML += playerHtml;
+            });
+            
+            // Update scoreboard
+            scoreBoard.innerHTML = '';
+            const sortedScores = Object.entries(state.scores).sort((a, b) => b[1] - a[1]);
+            sortedScores.forEach(([pid, score]) => {
+                const playerObj = state.players.find(p => p.id == pid);
+                const pName = playerObj?.name || 'Unknown';
+                scoreBoard.innerHTML += `<p>${pName}: ${score} points</p>`;
+            });
+            
+            // Handle audio
+            if (state.current_song && state.current_song.preview_url) {
+                if (audioPlayer.src !== state.current_song.preview_url) {
+                    audioPlayer.src = state.current_song.preview_url;
+                    if (currentRoundActive) {
+                        audioPlayer.play().catch(e => console.log("Autoplay was prevented. User must click play."));
+                    }
+                }
+            }
+        }
+        
+        function sendMessage(message) { 
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+            }
+        }
+        
+        function setReady(isReady) { sendMessage({ action: 'set_ready', is_ready: isReady }); }
+        function startGame() { sendMessage({ action: 'start_game' }); }
+        function kickPlayer(playerId) { sendMessage({ action: 'kick_player', player_id: playerId }); }
+        function submitGuess() { 
+            const guess = guessInput.value.trim();
+            if (guess) {
+                sendMessage({ action: 'guess', text: guess }); 
+                guessInput.value = '';
+                hideSuggestions();
+            }
+        }
+        function sendChatMessage() { 
+            const msg = chatInput.value.trim();
+            if (msg) {
+                sendMessage({ action: 'chat', text: msg }); 
+                chatInput.value = '';
+            }
+        }
+
+        // Click outside to hide suggestions
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#guessInput') && !e.target.closest('#suggestions-list')) {
+                hideSuggestions();
+            }
+        });
+
+        // INITIALIZATION
+        showView('home-view');
+        loadPublicRooms();
     </script>
 </body>
 </html>
