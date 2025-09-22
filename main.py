@@ -3,6 +3,7 @@ import json
 import random
 import sqlite3
 import uuid
+import time
 from typing import Dict, List, Optional
 
 import httpx
@@ -30,6 +31,11 @@ class CreateRoomRequest(BaseModel):
     host_name: str
     password: Optional[str] = None
 
+class GameSettings(BaseModel):
+    total_rounds: int = 10
+    music_duration: int = 30  # seconds
+    game_type: str = "regular"  # "regular" or "speed"
+
 class Player(BaseModel):
     id: int
     name: str
@@ -49,10 +55,25 @@ class GameState:
         self.scores: Dict[int, int] = {}
         self.current_round: int = 0
         self.total_rounds: int = 10
+        self.music_duration: int = 30
+        self.game_type: str = "regular"
         self.current_song: Optional[Dict] = None
         self.players_who_guessed: set[int] = set()
+        self.guess_times: Dict[int, float] = {}  # For speed-based scoring
+        self.round_start_time: Optional[float] = None
         self.is_game_active: bool = False
+        self.is_round_active: bool = False
+        self.is_reveal_phase: bool = False  # New phase for showing album image
         self.game_loop_task: Optional[asyncio.Task] = None
+
+    def update_settings(self, settings: GameSettings):
+        """Update game settings (only allowed before game starts)"""
+        if not self.is_game_active:
+            self.total_rounds = settings.total_rounds
+            self.music_duration = settings.music_duration
+            self.game_type = settings.game_type
+            return True
+        return False
 
     def add_player(self, player_id: int, player_name: str):
         if player_id not in self.players:
@@ -74,16 +95,49 @@ class GameState:
         self.current_round = 0
         self.scores = {player_id: 0 for player_id in self.players}
         self.players_who_guessed.clear()
+        self.guess_times.clear()
+
+    def start_round(self):
+        """Start a new round"""
+        self.is_round_active = True
+        self.is_reveal_phase = False
+        self.round_start_time = time.time()
+        self.players_who_guessed.clear()
+        self.guess_times.clear()
+
+    def end_round(self):
+        """End the current round"""
+        self.is_round_active = False
+
+    def start_reveal_phase(self):
+        """Start the reveal phase (show album image)"""
+        self.is_round_active = False
+        self.is_reveal_phase = True
 
     def check_guess(self, player_id: int, guess_text: str):
-        if player_id in self.players_who_guessed: 
+        if not self.is_round_active or player_id in self.players_who_guessed: 
             return None
+        
         if player_id not in self.scores: 
             self.scores[player_id] = 0
+        
         self.players_who_guessed.add(player_id)
+        current_time = time.time()
+        self.guess_times[player_id] = current_time - (self.round_start_time or current_time)
+        
         correct_answer = self.current_song.get("movie", "").lower() if self.current_song else ""
         if guess_text.lower() == correct_answer:
-            self.scores[player_id] += 10
+            if self.game_type == "speed":
+                # Speed-based scoring: earlier guesses get more points
+                time_elapsed = self.guess_times[player_id]
+                max_points = 20
+                min_points = 5
+                # Calculate points based on speed (faster = more points)
+                points = max(min_points, max_points - int(time_elapsed * 2))
+                self.scores[player_id] += points
+            else:
+                # Regular scoring: fixed points for correct answers
+                self.scores[player_id] += 10
             return True
         return False
 
@@ -91,15 +145,31 @@ class GameState:
         """Returns a dictionary representing the complete state of the room."""
         current_song_info = None
         if self.current_song:
-            current_song_info = {"preview_url": self.current_song.get("preview_url")}
+            # During round: only send preview_url
+            # During reveal: send preview_url and image
+            if self.is_reveal_phase:
+                current_song_info = {
+                    "preview_url": self.current_song.get("preview_url"),
+                    "image": self.current_song.get("image"),
+                    "title": self.current_song.get("title"),
+                    "movie": self.current_song.get("movie")
+                }
+            else:
+                current_song_info = {
+                    "preview_url": self.current_song.get("preview_url")
+                }
 
         return {
             "room_id": self.room_id,
             "host_id": self.host_id,
             "players": [player.dict() for player in self.players.values()],
             "is_game_active": self.is_game_active,
+            "is_round_active": self.is_round_active,
+            "is_reveal_phase": self.is_reveal_phase,
             "current_round": self.current_round,
             "total_rounds": self.total_rounds,
+            "music_duration": self.music_duration,
+            "game_type": self.game_type,
             "current_song": current_song_info,
             "scores": self.scores
         }
@@ -204,7 +274,8 @@ async def get_quiz_song():
         return {
             "title": "Demo Song",
             "movie": "Demo Movie",
-            "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+            "image": "https://via.placeholder.com/300x300?text=Demo+Album"
         }
     
     for _ in range(20):
@@ -220,22 +291,40 @@ async def get_quiz_song():
             if songs:
                 chosen_song = random.choice(songs)
                 best_url = ""
+                album_image = ""
+                
+                # Get the best quality audio URL
                 for link in chosen_song.get("downloadUrl", []):
                     if link.get("quality") == "320kbps": 
                         best_url = link.get("url")
                         break
+                
+                # Get the best quality image
+                images = chosen_song.get("image", [])
+                if images:
+                    # Find the highest quality image (usually "500x500")
+                    for img in reversed(images):  # Reverse to get higher quality first
+                        if img.get("quality") in ["500x500", "150x150"]:
+                            album_image = img.get("url")
+                            break
+                    # Fallback to first image if no specific quality found
+                    if not album_image and images:
+                        album_image = images[-1].get("url", "")
+                
                 if best_url:
                     return {
                         "title": chosen_song.get("name"), 
                         "movie": movie_title, 
-                        "preview_url": best_url
+                        "preview_url": best_url,
+                        "image": album_image or "https://via.placeholder.com/300x300?text=No+Image"
                     }
     
     # Return demo song if no valid songs found
     return {
         "title": "Demo Song",
         "movie": "Demo Movie", 
-        "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        "preview_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "image": "https://via.placeholder.com/300x300?text=Demo+Album"
     }
 
 # --------------------------------------------------------------------------
@@ -271,7 +360,7 @@ async def game_loop(room_id: str):
             song_data = await get_quiz_song()
             room.current_song = song_data
             room.current_round += 1
-            room.players_who_guessed.clear()  # Clear guesses for new round
+            room.start_round()  # Start the round with timing
             
             # Announce new round
             await broadcast_message(room_id, {
@@ -280,20 +369,30 @@ async def game_loop(room_id: str):
                 "text": f"🎵 Round {room.current_round}/{room.total_rounds} starting! Listen carefully..."
             })
             
+            # Send round start signal
+            await broadcast_message(room_id, {
+                "action": "round_start"
+            })
+            
             await broadcast_room_state(room_id)
             
-            # Wait for 30 seconds of playing
-            await asyncio.sleep(30)
+            # Wait for the configured music duration
+            await asyncio.sleep(room.music_duration)
             
             if not room.is_game_active: 
                 break
             
-            # Stop the music and reveal answer
+            # End the guessing phase and start reveal phase
+            room.start_reveal_phase()
+            
+            # Send round end signal with reveal
             await broadcast_message(room_id, {
                 "action": "round_end", 
                 "correct_answer": room.current_song.get("movie"), 
                 "scores": room.scores
             })
+            
+            await broadcast_room_state(room_id)  # This will now include the album image
             
             # Send round results to chat
             correct_answer = room.current_song.get("movie", "Unknown")
@@ -303,18 +402,24 @@ async def game_loop(room_id: str):
                 "text": f"⏰ Time's up! The correct answer was: {correct_answer}"
             })
             
-            # List who guessed correctly
+            # List who guessed correctly with their timing for speed mode
             correct_guessers = []
             for pid in room.players_who_guessed:
-                if pid in room.scores and room.scores[pid] > 0:
-                    player_name = room.players.get(pid).name if pid in room.players else "Unknown"
-                    correct_guessers.append(player_name)
+                player_obj = room.players.get(pid)
+                if player_obj and pid in room.scores:
+                    player_name = player_obj.name
+                    if room.game_type == "speed" and pid in room.guess_times:
+                        time_taken = round(room.guess_times[pid], 2)
+                        correct_guessers.append(f"{player_name} ({time_taken}s)")
+                    else:
+                        correct_guessers.append(player_name)
             
             if correct_guessers:
+                timing_text = " with times" if room.game_type == "speed" else ""
                 await broadcast_message(room_id, {
                     "action": "chat_message",
                     "player_name": "System",
-                    "text": f"✅ Correct guesses by: {', '.join(correct_guessers)}"
+                    "text": f"✅ Correct guesses{timing_text}: {', '.join(correct_guessers)}"
                 })
             else:
                 await broadcast_message(room_id, {
@@ -323,16 +428,14 @@ async def game_loop(room_id: str):
                     "text": "❌ Nobody guessed correctly this round!"
                 })
             
-            # Update scoreboard
-            await broadcast_room_state(room_id)
-            
-            # Wait before next round
+            # Wait before next round (reveal phase duration)
             await asyncio.sleep(10)
         except Exception as e:
             print(f"Error in game loop: {e}")
             break
     
     room.is_game_active = False
+    room.end_round()
     
     # Game over - announce winner
     if room.scores:
@@ -409,33 +512,72 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: int,
                 room.remove_player(player_to_kick)
                 await broadcast_room_state(room_id)
                 
+            elif action == "update_settings" and client_id == room.host_id:
+                settings_data = message.get("settings", {})
+                try:
+                    settings = GameSettings(**settings_data)
+                    if room.update_settings(settings):
+                        await broadcast_message(room_id, {
+                            "action": "settings_updated",
+                            "settings": {
+                                "total_rounds": room.total_rounds,
+                                "music_duration": room.music_duration,
+                                "game_type": room.game_type
+                            }
+                        })
+                        await broadcast_room_state(room_id)
+                    else:
+                        await websocket.send_text(json.dumps({
+                            "action": "error",
+                            "message": "Cannot change settings during game"
+                        }))
+                except Exception as e:
+                    await websocket.send_text(json.dumps({
+                        "action": "error",
+                        "message": f"Invalid settings: {str(e)}"
+                    }))
+                
             elif action == "start_game" and client_id == room.host_id and not room.is_game_active:
                 room.start_game()
                 room.game_loop_task = asyncio.create_task(game_loop(room_id))
                 await broadcast_room_state(room_id)
                 
-            elif action == "guess" and room.is_game_active:
+            elif action == "guess" and room.is_game_active and room.is_round_active:
                 guess_correct = room.check_guess(client_id, message.get("text", ""))
                 if guess_correct is not None:
+                    # Calculate points earned for this guess
+                    points_earned = 0
+                    if guess_correct:
+                        if room.game_type == "speed":
+                            time_elapsed = room.guess_times.get(client_id, 0)
+                            max_points = 20
+                            min_points = 5
+                            points_earned = max(min_points, max_points - int(time_elapsed * 2))
+                        else:
+                            points_earned = 10
+                    
                     await broadcast_message(room_id, {
                         "action": "guess_result", 
                         "player_name": player_name, 
-                        "correct": guess_correct
+                        "correct": guess_correct,
+                        "points_earned": points_earned
                     })
                     
-                    # Send guess result to chat
+                    # Send guess result to chat with speed info if applicable
                     if guess_correct:
-                        await broadcast_message(room_id, {
-                            "action": "chat_message",
-                            "player_name": "System",
-                            "text": f"✅ {player_name} guessed correctly!"
-                        })
-                    else:
-                        await broadcast_message(room_id, {
-                            "action": "chat_message",
-                            "player_name": "System",
-                            "text": f"❌ {player_name} guessed wrong!"
-                        })
+                        if room.game_type == "speed":
+                            time_taken = round(room.guess_times.get(client_id, 0), 2)
+                            await broadcast_message(room_id, {
+                                "action": "chat_message",
+                                "player_name": "System",
+                                "text": f"✅ {player_name} guessed correctly in {time_taken}s! (+{points_earned} points)"
+                            })
+                        else:
+                            await broadcast_message(room_id, {
+                                "action": "chat_message",
+                                "player_name": "System",
+                                "text": f"✅ {player_name} guessed correctly! (+{points_earned} points)"
+                            })
                     
                     await broadcast_room_state(room_id)
                     
