@@ -235,24 +235,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .room-card.private {
-            border-left-color: var(--warning-color);
-        }
-
-        .room-card.private::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            background: var(--warning-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         .room-info {
             display: flex;
             justify-content: space-between;
@@ -272,14 +254,22 @@
             font-size: 0.9rem;
         }
 
-        .private-badge {
-            background: var(--warning-color);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 8px;
+        /* Join Room Section */
+        .join-room-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--bg-light);
+        }
+
+        .join-room-flex {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .join-room-flex .input-group {
+            flex: 1;
+            margin: 0;
         }
 
         /* Room Layout - Three Column Design */
@@ -1281,6 +1271,7 @@
         let clientId;
         let playerName;
         let roomId;
+        let currentRoomPassword = null; // ✅ FIXED: Store current room password
         let typingTimer;
         let countdownInterval;
         let currentRoundActive = false;
@@ -1328,6 +1319,9 @@
 
         // COUNTDOWN TIMER FUNCTIONS
         function startCountdownTimer(duration) {
+            // ✅ FIXED: Stop any existing timer first
+            stopCountdownTimer();
+            
             let timeLeft = duration;
             countdownTimer.textContent = timeLeft;
             countdownTimer.classList.remove('hidden', 'warning', 'critical');
@@ -1500,7 +1494,8 @@
             mysteryBox.classList.remove('hidden');
             albumReveal.classList.add('hidden');
             songInfo.classList.add('hidden');
-            // Start countdown timer
+            // ✅ FIXED: Ensure timer is visible and start countdown
+            countdownTimer.classList.remove('hidden');
             startCountdownTimer(gameSettings.music_duration);
         }
 
@@ -1518,7 +1513,7 @@
             // ✅ FIXED: Properly update song info with correct DOM elements
             if (songTitleText || movieName) {
                 if (songTitleText) {
-                    songTitle.textContent = songTitleText; // Fixed: was shadowing variable
+                    songTitle.textContent = songTitleText;
                 }
                 if (movieName) {
                     movieTitle.textContent = `From "${movieName}"`;
@@ -1694,6 +1689,7 @@
             }
             audioPlayer.pause();
             stopCountdownTimer();
+            currentRoomPassword = null;
             showView('home-view');
             loadPublicRooms();
             showNotification('Left the room', 'info');
@@ -1790,6 +1786,8 @@
             }
             
             playerName = playerNameInput.value.trim();
+            // ✅ FIXED: Store the room password for auto-join
+            currentRoomPassword = passwordInput.value.trim() || null;
             
             try {
                 const response = await fetch('/api/rooms', {
@@ -1797,7 +1795,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         host_name: playerName, 
-                        password: passwordInput.value || null 
+                        password: currentRoomPassword 
                     })
                 });
                 
@@ -1808,7 +1806,8 @@
                 const data = await response.json();
                 clientId = data.host_id;
                 isHost = true;
-                joinRoom(data.room_id);
+                // ✅ FIXED: Pass the stored password to joinRoom
+                joinRoom(data.room_id, currentRoomPassword);
                 showNotification('Room created successfully!', 'success');
             } catch (error) {
                 console.error("Failed to create room:", error);
@@ -1816,10 +1815,10 @@
             }
         }
 
-        // NEW: Join room by ID function
+        // Join room by ID function
         function joinRoomById() {
             const roomIdToJoin = roomIdInput.value.trim().toUpperCase();
-            const password = joinPasswordInput.value.trim();
+            const password = joinPasswordInput.value.trim() || null;
             
             if (!roomIdToJoin) {
                 showNotification('Please enter a Room ID', 'error');
@@ -1833,8 +1832,6 @@
                 return;
             }
             
-            // Store password for the connection
-            sessionStorage.setItem(`room_${roomIdToJoin}_password`, password);
             joinRoom(roomIdToJoin, password);
         }
 
@@ -1847,6 +1844,7 @@
             
             playerName = playerNameInput.value.trim() || playerName;
             roomId = newRoomId;
+            currentRoomPassword = roomPassword; // Store for reconnection
             clientId = clientId || Math.floor(Math.random() * 90000) + 10000;
 
             const encodedPlayerName = encodeURIComponent(playerName);
@@ -1859,7 +1857,7 @@
                 wsUrl += `?password=${encodeURIComponent(roomPassword)}`;
             }
 
-            console.log("Connecting to WebSocket:", wsUrl);
+            console.log("Connecting to WebSocket:", wsUrl.replace(/password=[^&]+/, 'password=***'));
             ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
@@ -1872,6 +1870,7 @@
                 // Clear join form
                 roomIdInput.value = '';
                 joinPasswordInput.value = '';
+                passwordInput.value = '';
             };
 
             ws.onmessage = (event) => {
@@ -1905,7 +1904,7 @@
                     hasSubmittedGuess = false;
                     latestGuess = '';
                     
-                    showMysteryBox();
+                    showMysteryBox(); // ✅ This will now properly show the timer
                     guessInput.disabled = false;
                     guessInput.value = '';
                     guessStatus.textContent = 'Listen carefully and type your guess!';
@@ -1962,6 +1961,7 @@
                 }
                 audioPlayer.pause();
                 stopCountdownTimer();
+                currentRoomPassword = null;
                 showView('home-view');
                 loadPublicRooms();
             };
@@ -1995,7 +1995,10 @@
                         state.current_song.movie
                     );
                 } else if (state.is_round_active) {
-                    showMysteryBox();
+                    // ✅ FIXED: Only show mystery box if not already showing
+                    if (!mysteryBox.classList.contains('hidden') === false) {
+                        showMysteryBox();
+                    }
                 }
             } else {
                 roundInfo.style.display = 'none';
