@@ -7,9 +7,10 @@ import sqlite3
 import uuid
 import time
 from typing import Dict, List, Optional
+from urllib.parse import parse_qs
 
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -145,6 +146,12 @@ class GameState:
         self.is_reveal_phase: bool = False  # New phase for showing album image
         self.game_loop_task: Optional[asyncio.Task] = None
 
+    def check_password(self, provided_password: Optional[str]) -> bool:
+        """Check if the provided password matches the room password"""
+        if not self.password:  # No password required
+            return True
+        return self.password == provided_password
+
     def update_settings(self, settings: GameSettings):
         """Update game settings (only allowed before game starts)"""
         if not self.is_game_active:
@@ -250,7 +257,8 @@ class GameState:
             "music_duration": self.music_duration,
             "game_type": self.game_type,
             "current_song": current_song_info,
-            "scores": self.scores
+            "scores": self.scores,
+            "has_password": bool(self.password)
         }
 
 class GameRoomManager:
@@ -262,7 +270,7 @@ class GameRoomManager:
         room_id = str(uuid.uuid4())[:6].upper()
         room = GameState(room_id, host_id, host_name, password)
         self.rooms[room_id] = room
-        print(f"Room created: {room_id} for host {host_name}")
+        print(f"Room created: {room_id} for host {host_name} {'(private)' if password else '(public)'}")
         return room
 
     def get_room(self, room_id: str) -> Optional[GameState]:
@@ -273,10 +281,11 @@ class GameRoomManager:
             {
                 "room_id": room.room_id, 
                 "host_name": room.players[room.host_id].name, 
-                "player_count": len(room.players)
+                "player_count": len(room.players),
+                "has_password": bool(room.password)
             }
             for room in self.rooms.values() 
-            if not room.password and not room.is_game_active
+            if not room.password and not room.is_game_active  # Only show public rooms
         ]
 
 room_manager = GameRoomManager()
@@ -558,17 +567,30 @@ async def create_room_api(request: CreateRoomRequest):
     return {"room_id": room.room_id, "host_id": client_id}
 
 @app.websocket("/ws/{room_id}/{client_id}/{player_name}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: int, player_name: str):
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    room_id: str, 
+    client_id: int, 
+    player_name: str,
+    password: Optional[str] = Query(None)
+):
     # IMPORTANT: Accept the WebSocket connection first!
     await websocket.accept()
     
-    print(f"WebSocket connection attempt: room={room_id}, client={client_id}, player={player_name}")
+    print(f"WebSocket connection attempt: room={room_id}, client={client_id}, player={player_name}, password_provided={'yes' if password else 'no'}")
     
     room = room_manager.get_room(room_id)
     if not room:
         print(f"Room {room_id} not found")
         await websocket.send_text(json.dumps({"action": "error", "message": "Room not found"}))
         await websocket.close(code=1008, reason="Room not found")
+        return
+    
+    # Check password if room requires one
+    if not room.check_password(password):
+        print(f"Invalid password for room {room_id}")
+        await websocket.send_text(json.dumps({"action": "error", "message": "Invalid password"}))
+        await websocket.close(code=1008, reason="Invalid password")
         return
     
     # Initialize room connections dict if needed
