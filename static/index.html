@@ -1326,7 +1326,7 @@
             // manualPlaySection visibility handled by audio loading logic
         }
 
-        function showAlbumReveal(albumImageUrl, songTitle, movieName) {
+        function showAlbumReveal(albumImageUrl, songTitleText, movieName) {
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.add('hidden');
             manualPlaySection.classList.add('hidden');
@@ -1336,15 +1336,17 @@
                 albumReveal.classList.remove('hidden');
             }
             
-            if (songTitle || movieName) {
-                if (songTitle) songTitle.textContent = songTitle;
-                if (movieName) movieTitle.textContent = `From "${movieName}"`;
+            // ✅ FIXED: Properly update song info with correct DOM elements
+            if (songTitleText || movieName) {
+                if (songTitleText) {
+                    songTitle.textContent = songTitleText; // Fixed: was shadowingvariable
+                }
+                if (movieName) {
+                    movieTitle.textContent = `From "${movieName}"`;
+                }
                 songInfo.classList.remove('hidden');
             }
         }
-
-        // REST OF THE JAVASCRIPT CODE CONTINUES...
-        // (Due to length limitations, I'll provide the rest in the next part)
 
         // GUESS HANDLING
         function handleGuessInput(event) {
@@ -1646,11 +1648,10 @@
             clientId = clientId || Math.floor(Math.random() * 90000) + 10000;
 
             const encodedPlayerName = encodeURIComponent(playerName);
-            // ✅ FIXED (works on both HTTP and HTTPS)
+            // ✅ FIXED: Dynamic WebSocket protocol detection for HTTPS support
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
 
-            
             console.log("Connecting to WebSocket:", wsUrl);
             ws = new WebSocket(wsUrl);
             
@@ -1709,8 +1710,9 @@
                     manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
                     
-                    // Show album reveal if image provided
-                    if (message.album_image) {
+                    // ✅ FIXED: Show album reveal with proper song title display
+                    console.log('Round ended, song data:', message);
+                    if (message.album_image || message.song_title || message.correct_answer) {
                         showAlbumReveal(message.album_image, message.song_title, message.correct_answer);
                     }
                     
@@ -1761,8 +1763,14 @@
                 currentRoundSpan.textContent = state.current_round;
                 totalRoundsSpan.textContent = state.total_rounds;
                 
-                if (state.is_reveal_phase && state.current_song && state.current_song.image) {
-                    showAlbumReveal(state.current_song.image, state.current_song.title, state.current_song.movie);
+                // ✅ FIXED: Properly handle reveal phase with song info
+                if (state.is_reveal_phase && state.current_song) {
+                    console.log('Showing reveal phase with song:', state.current_song);
+                    showAlbumReveal(
+                        state.current_song.image, 
+                        state.current_song.title, 
+                        state.current_song.movie
+                    );
                 } else if (state.is_round_active) {
                     showMysteryBox();
                 }
