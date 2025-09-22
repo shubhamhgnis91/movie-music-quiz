@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import random
 import sqlite3
 import uuid
@@ -629,4 +630,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: int,
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use environment variable for port (required for Render)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
