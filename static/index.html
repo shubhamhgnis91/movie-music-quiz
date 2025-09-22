@@ -431,6 +431,36 @@
             margin: 10px 0;
         }
 
+        .manual-play-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .play-button {
+            background: linear-gradient(135deg, var(--success-color), #00b894);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .play-button:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .play-button:active {
+            transform: translateY(-1px);
+        }
+
         .guess-section {
             background: var(--bg-white);
             border-radius: var(--border-radius);
@@ -886,6 +916,15 @@
                     <i class="fas fa-question"></i>
                 </div>
                 
+                <!-- Manual Play Button (shown when autoplay fails) -->
+                <div id="manualPlaySection" class="manual-play-section hidden">
+                    <button id="manualPlayButton" class="play-button" onclick="playAudioManually()">
+                        <i class="fas fa-play"></i>
+                        Click to Play Song
+                    </button>
+                    <p style="color: var(--text-light); margin-top: 10px;">Browser blocked autoplay - click to start!</p>
+                </div>
+                
                 <!-- Album Reveal (shown after round) -->
                 <div id="albumReveal" class="hidden">
                     <img id="albumImage" class="album-reveal" alt="Album Cover">
@@ -1022,6 +1061,7 @@
         let typingTimer;
         let currentRoundActive = false;
         let isHost = false;
+        let audioLoadedForRound = false;
         let gameSettings = {
             total_rounds: 10,
             music_duration: 30,
@@ -1049,10 +1089,70 @@
         const gameDisplayTitle = document.getElementById('gameDisplayTitle');
         const audioPlayerSection = document.getElementById('audioPlayerSection');
         const mysteryBox = document.getElementById('mysteryBox');
+        const manualPlaySection = document.getElementById('manualPlaySection');
+        const manualPlayButton = document.getElementById('manualPlayButton');
         const albumReveal = document.getElementById('albumReveal');
         const albumImage = document.getElementById('albumImage');
         const songTitle = document.getElementById('songTitle');
         const movieTitle = document.getElementById('movieTitle');
+
+        // AUDIO FUNCTIONS
+        function playAudioManually() {
+            if (audioPlayer.src) {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play().then(() => {
+                    manualPlaySection.classList.add('hidden');
+                    showNotification('Audio playing! 🎵', 'success');
+                }).catch(e => {
+                    console.error('Manual play failed:', e);
+                    showNotification('Failed to play audio. Please try again.', 'error');
+                });
+            }
+        }
+
+        function loadAndPlayAudio(audioUrl) {
+            return new Promise((resolve, reject) => {
+                if (!audioUrl) {
+                    reject('No audio URL provided');
+                    return;
+                }
+
+                // Reset audio loaded flag
+                audioLoadedForRound = false;
+                
+                // Set up event listeners
+                const onCanPlay = () => {
+                    audioLoadedForRound = true;
+                    audioPlayer.removeEventListener('canplay', onCanPlay);
+                    audioPlayer.removeEventListener('error', onError);
+                    
+                    // Try to play
+                    audioPlayer.currentTime = 0;
+                    audioPlayer.play().then(() => {
+                        manualPlaySection.classList.add('hidden');
+                        resolve('Audio playing');
+                    }).catch(e => {
+                        console.log('Autoplay prevented, showing manual play button:', e);
+                        manualPlaySection.classList.remove('hidden');
+                        resolve('Manual play required');
+                    });
+                };
+                
+                const onError = (e) => {
+                    console.error('Audio loading error:', e);
+                    audioPlayer.removeEventListener('canplay', onCanPlay);
+                    audioPlayer.removeEventListener('error', onError);
+                    reject('Audio loading failed');
+                };
+                
+                audioPlayer.addEventListener('canplay', onCanPlay);
+                audioPlayer.addEventListener('error', onError);
+                
+                // Load the audio
+                audioPlayer.src = audioUrl;
+                audioPlayer.load();
+            });
+        }
 
         // UTILITY FUNCTIONS
         function showNotification(message, type = 'info') {
@@ -1081,6 +1181,7 @@
             gameDisplayTitle.textContent = 'Music Player';
             audioPlayerSection.classList.remove('hidden');
             mysteryBox.classList.add('hidden');
+            manualPlaySection.classList.add('hidden');
             albumReveal.classList.add('hidden');
         }
 
@@ -1089,12 +1190,14 @@
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.remove('hidden');
             albumReveal.classList.add('hidden');
+            // manualPlaySection visibility handled by audio loading logic
         }
 
         function showAlbumReveal(songData) {
             gameDisplayTitle.textContent = 'Answer Revealed!';
             audioPlayerSection.classList.add('hidden');
             mysteryBox.classList.add('hidden');
+            manualPlaySection.classList.add('hidden');
             albumReveal.classList.remove('hidden');
             
             if (songData.image) {
@@ -1187,6 +1290,7 @@
             if (ws) {
                 ws.close();
             }
+            audioPlayer.pause();
             showView('home-view');
             loadPublicRooms();
             showNotification('Left the room', 'info');
@@ -1404,23 +1508,17 @@
                     showMysteryBox();
                     guessInput.disabled = false;
                     guessInput.placeholder = 'Which movie is this song from?';
-                    
-                    // Play audio
-                    if (audioPlayer.src) {
-                        audioPlayer.currentTime = 0;
-                        audioPlayer.play().catch(e => {
-                            console.log("Autoplay prevented:", e);
-                        });
-                    }
                 } else if (message.action === "round_end") {
                     currentRoundActive = false;
                     audioPlayer.pause();
+                    manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
                     guessInput.placeholder = 'Round ended, please wait...';
                     showNotification(`Round ended! Correct answer: ${message.correct_answer}`, 'info');
                 } else if (message.action === "game_over") {
                     currentRoundActive = false;
                     audioPlayer.pause();
+                    manualPlaySection.classList.add('hidden');
                     guessInput.disabled = true;
                     guessInput.placeholder = 'Game finished!';
                     showAudioPlayer(); // Return to audio player view
@@ -1435,6 +1533,7 @@
                 console.error("WebSocket closed:", event);
                 const reason = event.reason || "Connection lost";
                 showNotification(`Disconnected: ${reason}`, 'error');
+                audioPlayer.pause();
                 showView('home-view');
                 loadPublicRooms();
             };
@@ -1575,8 +1674,19 @@
                 });
             }
             
-            // Handle audio
-            if (state.current_song && state.current_song.preview_url) {
+            // Handle audio - Load and play when round starts
+            if (state.current_song && state.current_song.preview_url && state.is_round_active) {
+                if (audioPlayer.src !== state.current_song.preview_url) {
+                    console.log('Loading new audio:', state.current_song.preview_url);
+                    loadAndPlayAudio(state.current_song.preview_url).then((result) => {
+                        console.log('Audio load result:', result);
+                    }).catch((error) => {
+                        console.error('Audio load failed:', error);
+                        showNotification('Failed to load audio. Please check your connection.', 'error');
+                    });
+                }
+            } else if (state.current_song && state.current_song.preview_url) {
+                // Just load the audio source for non-active rounds
                 if (audioPlayer.src !== state.current_song.preview_url) {
                     audioPlayer.src = state.current_song.preview_url;
                 }
