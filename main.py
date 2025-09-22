@@ -150,6 +150,8 @@ class GameState:
         """Check if the provided password matches the room password"""
         if not self.password:  # No password required
             return True
+        if provided_password is None:  # Password required but none provided
+            return False
         return self.password == provided_password
 
     def update_settings(self, settings: GameSettings):
@@ -572,7 +574,7 @@ async def websocket_endpoint(
     room_id: str, 
     client_id: int, 
     player_name: str,
-    password: Optional[str] = Query(None)
+    password: Optional[str] = Query(None)  # ✅ FIXED: Accept password as query parameter
 ):
     # IMPORTANT: Accept the WebSocket connection first!
     await websocket.accept()
@@ -586,10 +588,10 @@ async def websocket_endpoint(
         await websocket.close(code=1008, reason="Room not found")
         return
     
-    # Check password if room requires one
+    # ✅ FIXED: Check password if room requires one
     if not room.check_password(password):
-        print(f"Invalid password for room {room_id}")
-        await websocket.send_text(json.dumps({"action": "error", "message": "Invalid password"}))
+        print(f"Invalid password for room {room_id} - expected: {'<set>' if room.password else '<none>'}, got: {'<provided>' if password else '<none>'}")
+        await websocket.send_text(json.dumps({"action": "error", "message": "Invalid password for this room"}))
         await websocket.close(code=1008, reason="Invalid password")
         return
     
