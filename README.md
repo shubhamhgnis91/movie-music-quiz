@@ -17,14 +17,9 @@ A real-time multiplayer quiz game where players guess movie titles from their so
 pip install -r requirements.txt
 ```
 
-2. Set up the database:
+2. Run the server:
 ```bash
-python seed_db.py
-```
-
-3. Run the server:
-```bash
-python main.py
+uvicorn main:app --reload --port 8000
 ```
 
 4. Open your browser to `http://localhost:8000`
