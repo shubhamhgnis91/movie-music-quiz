@@ -2,120 +2,766 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Movie Music Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Movie Music Quiz 🎵</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 2em; }
-        .view { display: none; }
-        #home-view { display: block; }
-        #room-view { display: none; }
-        #chatBox { 
-            height: 300px; 
-            border: 1px solid #ccc; 
-            overflow-y: scroll; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            background-color: #f9f9f9;
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --success-color: #00d4aa;
+            --warning-color: #feca57;
+            --danger-color: #ff6b6b;
+            --text-dark: #2c3e50;
+            --text-light: #95a5a6;
+            --bg-light: #f8f9fa;
+            --bg-white: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
+            --border-radius: 15px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .chat-message {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 5px;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .system-message {
-            background-color: #e3f2fd;
-            color: #1976d2;
-            font-style: italic;
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
         }
-        .player-message {
-            background-color: #fff;
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
         }
-        .player-list-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 5px; 
-            border-bottom: 1px solid #eee; 
-        }
-        .player-list-item button { margin-left: 10px; }
-        .ready { color: green; font-weight: bold; }
-        .not-ready { color: orange; }
-        .round-info {
-            background-color: #fff3e0;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        #suggestions-list {
+
+        .floating-notes {
             position: absolute;
-            background: white;
-            border: 1px solid #ccc;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 6s infinite ease-in-out;
+            color: white;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin: 20px 0;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.2rem;
+            font-weight: 300;
+        }
+
+        .input-group {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--bg-white);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group label {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            transition: var(--transition);
+            pointer-events: none;
+            background: var(--bg-white);
+            padding: 0 5px;
+        }
+
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: 0;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            min-height: 50px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn.btn-outline {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn.btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn.btn-success {
+            background: linear-gradient(135deg, var(--success-color), #00b894);
+        }
+
+        .btn.btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #e55656);
+        }
+
+        .btn.btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #f39c12);
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .room-card {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .room-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .room-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-info h3 {
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+
+        .room-info .player-count {
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .player-list {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: var(--bg-light);
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+
+        .player-item:hover {
+            background: #e3f2fd;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .status-ready {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-not-ready {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .score-board {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: var(--bg-light);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--primary-color);
+        }
+
+        .score-item.first::before { background: #ffd700; }
+        .score-item.second::before { background: #c0c0c0; }
+        .score-item.third::before { background: #cd7f32; }
+
+        .round-indicator {
+            background: linear-gradient(135deg, var(--warning-color), #f39c12);
+            color: white;
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            margin: 20px 0;
+        }
+
+        .audio-player {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .audio-player audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .guess-section {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .guess-input-wrapper {
+            position: relative;
+            margin: 15px 0;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-white);
+            border: 1px solid #e1e8ed;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--shadow);
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
         }
+
         .suggestion-item {
-            padding: 8px;
+            padding: 12px 20px;
             cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 1px solid #f0f0f0;
         }
+
         .suggestion-item:hover {
-            background-color: #f0f0f0;
+            background: var(--bg-light);
+            color: var(--primary-color);
         }
-        audio {
-            width: 100%;
+
+        .chat-container {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            height: 350px;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--bg-light);
+        }
+
+        .message {
             margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
         }
+
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .message.system {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: var(--primary-color);
+            font-style: italic;
+            margin: 15px auto;
+            text-align: center;
+            border-radius: 20px;
+        }
+
+        .message.player {
+            background: var(--bg-white);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-left: 0;
+        }
+
+        .message.own {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px 20px;
+            background: var(--bg-white);
+            border-top: 1px solid #e1e8ed;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #e1e8ed;
+            border-radius: 25px;
+            font-size: 1rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-white);
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .notification.success { border-left: 4px solid var(--success-color); }
+        .notification.error { border-left: 4px solid var(--danger-color); }
+        .notification.info { border-left: 4px solid var(--primary-color); }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .game-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .room-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+                margin: 10px 0;
+            }
+
+            .chat-messages {
+                height: 250px;
+            }
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 2px;
+            margin: 30px 0;
+        }
+
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online { background: var(--success-color); }
+        .status-indicator.offline { background: var(--text-light); }
     </style>
 </head>
 <body>
-
-    <div id="home-view" class="view">
-        <h1>Movie Music Quiz Lobby</h1>
-        <div>
-            <input type="text" id="playerNameInput" placeholder="Enter Your Name" required>
-        </div>
-        <hr>
-        <div>
-            <h2>Create a New Room</h2>
-            <input type="text" id="passwordInput" placeholder="Password (optional)">
-            <button onclick="createRoom()">Create Room</button>
-        </div>
-        <hr>
-        <div>
-            <h2>Public Rooms</h2>
-            <div id="publicRoomsList">Loading rooms...</div>
-        </div>
+    <div class="background-animation">
+        <div class="floating-notes" style="top: 10%; left: 10%;">♪</div>
+        <div class="floating-notes" style="top: 20%; right: 15%; animation-delay: 1s;">♫</div>
+        <div class="floating-notes" style="bottom: 30%; left: 20%; animation-delay: 2s;">♬</div>
+        <div class="floating-notes" style="bottom: 15%; right: 10%; animation-delay: 3s;">♩</div>
+        <div class="floating-notes" style="top: 50%; left: 5%; animation-delay: 4s;">🎵</div>
+        <div class="floating-notes" style="top: 70%; right: 25%; animation-delay: 5s;">🎶</div>
     </div>
 
-    <div id="room-view" class="view">
-        <h1>Room ID: <span id="roomIdSpan"></span></h1>
-        <div id="roundInfo" class="round-info" style="display: none;">
-            Round <span id="currentRound">0</span> of <span id="totalRounds">10</span>
-        </div>
-        <audio id="audioPlayer" controls></audio>
-        <hr>
-        <div style="display: flex; gap: 2em;">
-            <div style="flex: 1;">
-                <h2>Players</h2>
-                <div id="playerList"></div>
-                <h2>Scores</h2>
-                <div id="scoreBoard"></div>
+    <div class="container">
+        <!-- Home View -->
+        <div id="home-view" class="view active">
+            <div class="header">
+                <h1>🎬 Movie Music Quiz 🎵</h1>
+                <p>Test your Bollywood knowledge with our musical quiz game!</p>
             </div>
-            <div style="flex: 2;">
-                <h2>Game Actions</h2>
-                <div style="position: relative;">
-                    <input type="text" id="guessInput" placeholder="Type your movie guess..." onkeyup="handleGuessInput(event)">
-                    <div id="suggestions-list"></div>
-                    <button onclick="submitGuess()">Submit Guess</button>
+
+            <div class="card">
+                <div class="section-title">
+                    <i class="fas fa-user"></i>
+                    Player Setup
                 </div>
-                <hr>
-                <h2>Chat</h2>
-                <div id="chatBox"></div>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="chatInput" placeholder="Type a message..." style="flex: 1;" onkeypress="if(event.key==='Enter')sendChatMessage()">
-                    <button onclick="sendChatMessage()">Send</button>
+                <div class="input-group">
+                    <input type="text" id="playerNameInput" placeholder=" " required>
+                    <label>Enter Your Name</label>
                 </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="card">
+                <div class="section-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Create New Room
+                </div>
+                <div class="input-group">
+                    <input type="password" id="passwordInput" placeholder=" ">
+                    <label>Room Password (Optional)</label>
+                </div>
+                <button class="btn btn-success" onclick="createRoom()">
+                    <i class="fas fa-rocket"></i>
+                    Create Room
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="card">
+                <div class="section-title">
+                    <i class="fas fa-globe"></i>
+                    Join Public Rooms
+                </div>
+                <div id="publicRoomsList" class="room-grid">
+                    <div class="loading"></div>
+                    Loading available rooms...
+                </div>
+                <button class="btn btn-outline" onclick="loadPublicRooms()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Rooms
+                </button>
+            </div>
+        </div>
+
+        <!-- Room View -->
+        <div id="room-view" class="view">
+            <div class="header">
+                <h1>🎮 Room: <span id="roomIdSpan">LOADING</span></h1>
+                <p>Get ready for the ultimate music challenge!</p>
+            </div>
+
+            <div id="roundInfo" class="round-indicator" style="display: none;">
+                <i class="fas fa-music"></i>
+                Round <span id="currentRound">0</span> of <span id="totalRounds">10</span>
+                <div class="pulse" style="display: inline-block; margin-left: 10px;">🎵</div>
+            </div>
+
+            <div class="audio-player card">
+                <div class="section-title">
+                    <i class="fas fa-play-circle"></i>
+                    Music Player
+                </div>
+                <audio id="audioPlayer" controls preload="none">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+
+            <div class="game-layout">
+                <div class="sidebar">
+                    <div class="player-list">
+                        <div class="section-title">
+                            <i class="fas fa-users"></i>
+                            Players
+                        </div>
+                        <div id="playerList"></div>
+                    </div>
+
+                    <div class="score-board">
+                        <div class="section-title">
+                            <i class="fas fa-trophy"></i>
+                            Leaderboard
+                        </div>
+                        <div id="scoreBoard"></div>
+                    </div>
+                </div>
+
+                <div class="main-content">
+                    <div class="guess-section">
+                        <div class="section-title">
+                            <i class="fas fa-lightbulb"></i>
+                            Make Your Guess
+                        </div>
+                        <div class="guess-input-wrapper">
+                            <div class="input-group">
+                                <input type="text" id="guessInput" placeholder=" " onkeyup="handleGuessInput(event)">
+                                <label>Which movie is this song from?</label>
+                            </div>
+                            <div id="suggestions-list" class="suggestions"></div>
+                        </div>
+                        <button class="btn btn-warning" onclick="submitGuess()">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Guess
+                        </button>
+                    </div>
+
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            <i class="fas fa-comments"></i>
+                            Game Chat
+                        </div>
+                        <div id="chatBox" class="chat-messages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter')sendChatMessage()">
+                            <button class="btn" onclick="sendChatMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn btn-outline" onclick="leaveRoom()">
+                    <i class="fas fa-door-open"></i>
+                    Leave Room
+                </button>
             </div>
         </div>
     </div>
@@ -128,6 +774,7 @@
         let roomId;
         let typingTimer;
         let currentRoundActive = false;
+        let isHost = false;
 
         // DOM ELEMENTS
         const views = document.querySelectorAll('.view');
@@ -146,18 +793,66 @@
         const currentRoundSpan = document.getElementById('currentRound');
         const totalRoundsSpan = document.getElementById('totalRounds');
 
+        // UTILITY FUNCTIONS
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function getPlayerInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
         // VIEW MANAGEMENT
         function showView(viewId) {
             views.forEach(view => {
-                view.style.display = view.id === viewId ? 'block' : 'none';
+                view.classList.remove('active');
             });
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function leaveRoom() {
+            if (ws) {
+                ws.close();
+            }
+            showView('home-view');
+            loadPublicRooms();
+            showNotification('Left the room', 'info');
         }
 
         // CHAT FUNCTIONS
-        function addChatMessage(playerName, text) {
+        function addChatMessage(playerName, text, isOwn = false) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = playerName === 'System' ? 'chat-message system-message' : 'chat-message player-message';
-            messageDiv.innerHTML = `<strong>${playerName}:</strong> ${text}`;
+            const isSystem = playerName === 'System';
+            
+            if (isSystem) {
+                messageDiv.className = 'message system';
+                messageDiv.innerHTML = `<i class="fas fa-robot" style="margin-right: 8px;"></i>${text}`;
+            } else {
+                messageDiv.className = `message player ${isOwn ? 'own' : ''}`;
+                messageDiv.innerHTML = `
+                    <div class="message-sender">
+                        <div class="player-avatar" style="width: 24px; height: 24px; font-size: 0.7rem; margin-right: 8px;">
+                            ${getPlayerInitials(playerName)}
+                        </div>
+                        ${playerName}
+                    </div>
+                    <div>${text}</div>
+                `;
+            }
+            
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -192,7 +887,7 @@
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'suggestion-item';
-                    div.textContent = suggestion;
+                    div.innerHTML = `<i class="fas fa-film" style="margin-right: 8px; color: var(--primary-color);"></i>${suggestion}`;
                     div.onclick = () => {
                         guessInput.value = suggestion;
                         hideSuggestions();
@@ -211,6 +906,8 @@
 
         // API & WEBSOCKET LOGIC
         async function loadPublicRooms() {
+            publicRoomsList.innerHTML = '<div class="loading"></div>Loading available rooms...';
+            
             try {
                 const response = await fetch('/api/rooms');
                 if (!response.ok) {
@@ -218,56 +915,112 @@
                 }
                 const rooms = await response.json();
                 publicRoomsList.innerHTML = '';
+                
                 if (rooms.length === 0) {
-                    publicRoomsList.innerHTML = '<p>No public rooms available. Create one!</p>';
+                    publicRoomsList.innerHTML = `
+                        <div class="room-card" style="text-align: center; color: var(--text-light);">
+                            <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <h3>No public rooms available</h3>
+                            <p>Create your own room to get started!</p>
+                        </div>
+                    `;
                 } else {
                     rooms.forEach(room => {
                         const roomEl = document.createElement('div');
-                        roomEl.innerHTML = `<span>${room.host_name}'s Room (${room.player_count} players)</span> <button onclick="joinRoom('${room.room_id}')">Join</button>`;
+                        roomEl.className = 'room-card';
+                        roomEl.innerHTML = `
+                            <div class="room-info">
+                                <div>
+                                    <h3><i class="fas fa-users"></i> ${room.host_name}'s Room</h3>
+                                    <p style="color: var(--text-light); margin: 0;">Room ID: ${room.room_id}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="player-count">
+                                        ${room.player_count} ${room.player_count === 1 ? 'player' : 'players'}
+                                    </div>
+                                    <button class="btn btn-outline" onclick="joinRoom('${room.room_id}')" style="margin-top: 10px;">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        Join
+                                    </button>
+                                </div>
+                            </div>
+                        `;
                         publicRoomsList.appendChild(roomEl);
                     });
                 }
             } catch (error) {
                 console.error("Failed to load rooms:", error);
-                publicRoomsList.innerHTML = '<p>Error loading rooms. Is the server running correctly?</p>';
+                publicRoomsList.innerHTML = `
+                    <div class="room-card" style="text-align: center; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <h3>Error loading rooms</h3>
+                        <p>Please check if the server is running correctly.</p>
+                        <button class="btn btn-outline" onclick="loadPublicRooms()" style="margin-top: 10px;">
+                            <i class="fas fa-sync-alt"></i>
+                            Retry
+                        </button>
+                    </div>
+                `;
+                showNotification('Failed to load rooms', 'error');
             }
         }
 
         async function createRoom() {
-            if (!playerNameInput.value) { alert("Please enter your name."); return; }
-            playerName = playerNameInput.value;
-
+            if (!playerNameInput.value.trim()) {
+                showNotification('Please enter your name', 'error');
+                playerNameInput.focus();
+                return;
+            }
+            
+            playerName = playerNameInput.value.trim();
+            
             try {
                 const response = await fetch('/api/rooms', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host_name: playerName, password: passwordInput.value })
+                    body: JSON.stringify({ 
+                        host_name: playerName, 
+                        password: passwordInput.value || null 
+                    })
                 });
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 clientId = data.host_id;
+                isHost = true;
                 joinRoom(data.room_id);
+                showNotification('Room created successfully!', 'success');
             } catch (error) {
                 console.error("Failed to create room:", error);
-                alert("Could not create room. Check server logs.");
+                showNotification('Could not create room. Please try again.', 'error');
             }
         }
 
         function joinRoom(newRoomId) {
-            if (!playerNameInput.value && !playerName) { alert("Please enter your name."); return; }
-            playerName = playerNameInput.value || playerName;
+            if (!playerNameInput.value.trim() && !playerName) {
+                showNotification('Please enter your name', 'error');
+                playerNameInput.focus();
+                return;
+            }
+            
+            playerName = playerNameInput.value.trim() || playerName;
             roomId = newRoomId;
-            clientId = clientId || Math.floor(Math.random() * 10000);
+            clientId = clientId || Math.floor(Math.random() * 90000) + 10000;
 
             const encodedPlayerName = encodeURIComponent(playerName);
             const wsUrl = `ws://${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
+            
             console.log("Connecting to WebSocket:", wsUrl);
             ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
                 console.log("Connected to room " + roomId);
                 showView('room-view');
-                addChatMessage("System", `Welcome to room ${roomId}!`);
+                showNotification(`Connected to room ${roomId}`, 'success');
+                addChatMessage("System", `Welcome to room ${roomId}! 🎉`);
             };
 
             ws.onmessage = (event) => {
@@ -277,39 +1030,52 @@
                 if (message.action === "update_state") {
                     renderRoom(message.state);
                 } else if (message.action === "chat_message") {
-                    addChatMessage(message.player_name, message.text);
+                    const isOwn = message.player_name === playerName && message.player_name !== 'System';
+                    addChatMessage(message.player_name, message.text, isOwn);
                 } else if (message.action === "suggestions") {
                     showSuggestions(message.suggestions);
+                } else if (message.action === "guess_result") {
+                    if (message.correct) {
+                        showNotification(`${message.player_name} guessed correctly! 🎉`, 'success');
+                    }
                 } else if (message.action === "round_end") {
                     currentRoundActive = false;
                     audioPlayer.pause();
                     guessInput.disabled = true;
+                    guessInput.placeholder = 'Round ended, please wait...';
+                    showNotification(`Round ended! Correct answer: ${message.correct_answer}`, 'info');
+                    
                     setTimeout(() => {
                         guessInput.disabled = false;
                         guessInput.value = '';
+                        guessInput.placeholder = 'Which movie is this song from?';
                     }, 10000);
                 } else if (message.action === "game_over") {
                     currentRoundActive = false;
                     audioPlayer.pause();
                     guessInput.disabled = true;
-                    addChatMessage("System", "Game Over! Check the final scores!");
+                    guessInput.placeholder = 'Game finished!';
+                    showNotification('Game Over! 🏆 Check the final leaderboard!', 'success');
                 }
             };
 
             ws.onclose = (event) => {
                 console.error("WebSocket closed:", event);
-                alert("Connection to room lost. Reason: " + (event.reason || "Unknown error"));
+                const reason = event.reason || "Connection lost";
+                showNotification(`Disconnected: ${reason}`, 'error');
                 showView('home-view');
                 loadPublicRooms();
             };
             
             ws.onerror = (error) => {
                 console.error("WebSocket error:", error);
+                showNotification('Connection error occurred', 'error');
             };
         }
         
         function renderRoom(state) {
             roomIdSpan.textContent = state.room_id;
+            isHost = (clientId === state.host_id);
             
             // Update round info
             if (state.is_game_active) {
@@ -324,39 +1090,111 @@
             
             // Update player list
             playerList.innerHTML = '';
-            state.players.forEach(p => {
-                const isHost = p.id === state.host_id;
+            state.players.forEach((p, index) => {
+                const isHostPlayer = p.id === state.host_id;
                 const isMe = p.id === clientId;
-                const readyStatus = p.is_ready ? '<span class="ready">Ready</span>' : '<span class="not-ready">Not Ready</span>';
-                let playerHtml = `<div class="player-list-item"><span>${p.name} ${isHost ? '(Host)' : ''} - ${readyStatus}</span><div>`;
-                if (isHost && !isMe && !state.is_game_active) { 
-                    playerHtml += `<button onclick="kickPlayer(${p.id})">Kick</button>`; 
+                
+                const playerEl = document.createElement('div');
+                playerEl.className = 'player-item';
+                
+                const statusClass = p.is_ready ? 'status-ready' : 'status-not-ready';
+                const statusText = p.is_ready ? 'Ready' : 'Not Ready';
+                const statusIcon = p.is_ready ? 'check-circle' : 'clock';
+                
+                let actions = '';
+                if (isHost && !isMe && !state.is_game_active) {
+                    actions += `<button class="btn btn-danger" onclick="kickPlayer(${p.id})" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fas fa-user-times"></i></button>`;
                 }
-                if (isMe && !isHost && !state.is_game_active) { 
-                    playerHtml += `<button onclick="setReady(${!p.is_ready})">${p.is_ready ? 'Unready' : 'Ready Up'}</button>`;
+                if (isMe && !isHost && !state.is_game_active) {
+                    const readyAction = p.is_ready ? 'Unready' : 'Ready Up';
+                    const readyIcon = p.is_ready ? 'times' : 'check';
+                    actions += `<button class="btn btn-outline" onclick="setReady(${!p.is_ready})" style="padding: 8px 12px; font-size: 0.8rem;"><i class="fas fa-${readyIcon}"></i> ${readyAction}</button>`;
                 }
-                if (isMe && isHost && !state.is_game_active) { 
-                    playerHtml += `<button onclick="startGame()">Start Game</button>`;
+                if (isMe && isHost && !state.is_game_active) {
+                    actions += `<button class="btn btn-success" onclick="startGame()" style="padding: 8px 15px; font-size: 0.9rem;"><i class="fas fa-play"></i> Start Game</button>`;
                 }
-                playerHtml += `</div></div>`;
-                playerList.innerHTML += playerHtml;
+                
+                playerEl.innerHTML = `
+                    <div class="player-info">
+                        <div class="player-avatar">${getPlayerInitials(p.name)}</div>
+                        <div>
+                            <div style="font-weight: 600;">
+                                ${p.name} 
+                                ${isHostPlayer ? '<i class="fas fa-crown" style="color: #ffd700; margin-left: 5px;"></i>' : ''}
+                                ${isMe ? '<span style="color: var(--primary-color); font-size: 0.8rem; margin-left: 5px;">(You)</span>' : ''}
+                            </div>
+                            <div class="${statusClass}" style="font-size: 0.9rem;">
+                                <i class="fas fa-${statusIcon}"></i> ${statusText}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        ${actions}
+                    </div>
+                `;
+                
+                playerList.appendChild(playerEl);
             });
             
             // Update scoreboard
             scoreBoard.innerHTML = '';
-            const sortedScores = Object.entries(state.scores).sort((a, b) => b[1] - a[1]);
-            sortedScores.forEach(([pid, score]) => {
-                const playerObj = state.players.find(p => p.id == pid);
-                const pName = playerObj?.name || 'Unknown';
-                scoreBoard.innerHTML += `<p>${pName}: ${score} points</p>`;
-            });
+            if (Object.keys(state.scores).length === 0) {
+                scoreBoard.innerHTML = `
+                    <div style="text-align: center; color: var(--text-light); padding: 20px;">
+                        <i class="fas fa-trophy" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>Scores will appear here once the game starts!</p>
+                    </div>
+                `;
+            } else {
+                const sortedScores = Object.entries(state.scores).sort((a, b) => b[1] - a[1]);
+                sortedScores.forEach(([pid, score], index) => {
+                    const playerObj = state.players.find(p => p.id == pid);
+                    const pName = playerObj?.name || 'Unknown';
+                    
+                    const scoreEl = document.createElement('div');
+                    let rankClass = '';
+                    let rankIcon = '';
+                    
+                    if (index === 0) {
+                        rankClass = 'first';
+                        rankIcon = '<i class="fas fa-crown" style="color: #ffd700; margin-right: 8px;"></i>';
+                    } else if (index === 1) {
+                        rankClass = 'second';
+                        rankIcon = '<i class="fas fa-medal" style="color: #c0c0c0; margin-right: 8px;"></i>';
+                    } else if (index === 2) {
+                        rankClass = 'third';
+                        rankIcon = '<i class="fas fa-medal" style="color: #cd7f32; margin-right: 8px;"></i>';
+                    } else {
+                        rankIcon = `<span style="margin-right: 8px; font-weight: bold;">${index + 1}.</span>`;
+                    }
+                    
+                    scoreEl.className = `score-item ${rankClass}`;
+                    scoreEl.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            ${rankIcon}
+                            <div class="player-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; margin-right: 10px;">
+                                ${getPlayerInitials(pName)}
+                            </div>
+                            <span style="font-weight: 500;">${pName}</span>
+                        </div>
+                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--primary-color);">
+                            ${score} pts
+                        </div>
+                    `;
+                    
+                    scoreBoard.appendChild(scoreEl);
+                });
+            }
             
             // Handle audio
             if (state.current_song && state.current_song.preview_url) {
                 if (audioPlayer.src !== state.current_song.preview_url) {
                     audioPlayer.src = state.current_song.preview_url;
                     if (currentRoundActive) {
-                        audioPlayer.play().catch(e => console.log("Autoplay was prevented. User must click play."));
+                        audioPlayer.play().catch(e => {
+                            console.log("Autoplay prevented:", e);
+                            showNotification('Click play button to start the music!', 'info');
+                        });
                     }
                 }
             }
@@ -365,20 +1203,40 @@
         function sendMessage(message) { 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify(message));
+            } else {
+                showNotification('Connection lost. Please rejoin the room.', 'error');
             }
         }
         
-        function setReady(isReady) { sendMessage({ action: 'set_ready', is_ready: isReady }); }
-        function startGame() { sendMessage({ action: 'start_game' }); }
-        function kickPlayer(playerId) { sendMessage({ action: 'kick_player', player_id: playerId }); }
+        function setReady(isReady) { 
+            sendMessage({ action: 'set_ready', is_ready: isReady }); 
+        }
+        
+        function startGame() { 
+            sendMessage({ action: 'start_game' }); 
+            showNotification('Starting the game! 🎮', 'success');
+        }
+        
+        function kickPlayer(playerId) { 
+            if (confirm('Are you sure you want to kick this player?')) {
+                sendMessage({ action: 'kick_player', player_id: playerId }); 
+            }
+        }
+        
         function submitGuess() { 
             const guess = guessInput.value.trim();
-            if (guess) {
+            if (guess && currentRoundActive) {
                 sendMessage({ action: 'guess', text: guess }); 
                 guessInput.value = '';
                 hideSuggestions();
+                showNotification('Guess submitted! 🤞', 'info');
+            } else if (!currentRoundActive) {
+                showNotification('Wait for the next round to start!', 'warning');
+            } else {
+                showNotification('Please enter a movie name!', 'warning');
             }
         }
+        
         function sendChatMessage() { 
             const msg = chatInput.value.trim();
             if (msg) {
@@ -387,16 +1245,35 @@
             }
         }
 
-        // Click outside to hide suggestions
+        // Event Listeners
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#guessInput') && !e.target.closest('#suggestions-list')) {
                 hideSuggestions();
             }
         });
 
-        // INITIALIZATION
-        showView('home-view');
-        loadPublicRooms();
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            showView('home-view');
+            loadPublicRooms();
+            
+            // Auto-focus name input
+            playerNameInput.focus();
+        });
+
+        // Auto-refresh rooms every 10 seconds
+        setInterval(() => {
+            if (document.getElementById('home-view').classList.contains('active')) {
+                loadPublicRooms();
+            }
+        }, 10000);
     </script>
 </body>
 </html>
