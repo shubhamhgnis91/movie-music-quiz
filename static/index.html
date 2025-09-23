@@ -129,6 +129,51 @@
             font-weight: 300;
         }
 
+        /* ✅ FIXED: Room header with Leave button positioning */
+        .room-header {
+            position: relative;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .room-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .leave-room-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .leave-room-btn:hover {
+            background: var(--danger-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
         .input-group {
             position: relative;
             margin: 20px 0;
@@ -959,6 +1004,16 @@
                 height: 50px;
                 font-size: 1rem;
             }
+
+            .leave-room-btn {
+                position: static;
+                margin: 10px auto 0 auto;
+                display: flex;
+            }
+
+            .room-header {
+                text-align: center;
+            }
         }
 
         @media (max-width: 768px) {
@@ -966,7 +1021,8 @@
                 padding: 10px;
             }
             
-            .header h1 {
+            .header h1,
+            .room-header h1 {
                 font-size: 2rem;
             }
             
@@ -1091,7 +1147,12 @@
 
         <!-- Room View -->
         <div id="room-view" class="view">
-            <div class="header">
+            <!-- ✅ FIXED: New room header with Leave button positioned properly -->
+            <div class="room-header">
+                <button class="leave-room-btn" onclick="leaveRoom()">
+                    <i class="fas fa-door-open"></i>
+                    Leave Room
+                </button>
                 <h1>🎮 Room: <span id="roomIdSpan">LOADING</span></h1>
                 <div id="roundInfo" class="round-indicator" style="display: none;">
                     <i class="fas fa-music"></i>
@@ -1201,13 +1262,6 @@
                     </div>
                 </div>
             </div>
-
-            <div style="text-align: center; margin: 30px 0;">
-                <button class="btn btn-outline" onclick="leaveRoom()">
-                    <i class="fas fa-door-open"></i>
-                    Leave Room
-                </button>
-            </div>
         </div>
     </div>
 
@@ -1271,7 +1325,7 @@
         let clientId;
         let playerName;
         let roomId;
-        let currentRoomPassword = null; // ✅ FIXED: Store current room password
+        let currentRoomPassword = null;
         let typingTimer;
         let countdownInterval;
         let currentRoundActive = false;
@@ -1319,7 +1373,6 @@
 
         // COUNTDOWN TIMER FUNCTIONS
         function startCountdownTimer(duration) {
-            // ✅ FIXED: Stop any existing timer first
             stopCountdownTimer();
             
             let timeLeft = duration;
@@ -1377,16 +1430,13 @@
                     return;
                 }
 
-                // Reset audio loaded flag
                 audioLoadedForRound = false;
                 
-                // Set up event listeners
                 const onCanPlay = () => {
                     audioLoadedForRound = true;
                     audioPlayer.removeEventListener('canplay', onCanPlay);
                     audioPlayer.removeEventListener('error', onError);
                     
-                    // Try to play
                     audioPlayer.currentTime = 0;
                     audioPlayer.play().then(() => {
                         manualPlaySection.classList.add('hidden');
@@ -1408,7 +1458,6 @@
                 audioPlayer.addEventListener('canplay', onCanPlay);
                 audioPlayer.addEventListener('error', onError);
                 
-                // Load the audio
                 audioPlayer.src = audioUrl;
                 audioPlayer.load();
             });
@@ -1459,14 +1508,12 @@
             notificationsList.appendChild(notificationDiv);
             notificationsList.scrollTop = notificationsList.scrollHeight;
             
-            // Keep only last 20 notifications
             while (notificationsList.children.length > 20) {
                 notificationsList.removeChild(notificationsList.firstChild);
             }
         }
 
         function highlightCorrectPlayer(playerName) {
-            // Find and highlight the player in leaderboard
             const scoreItems = document.querySelectorAll('.score-item');
             scoreItems.forEach(item => {
                 const nameElement = item.querySelector('.player-name');
@@ -1494,7 +1541,6 @@
             mysteryBox.classList.remove('hidden');
             albumReveal.classList.add('hidden');
             songInfo.classList.add('hidden');
-            // ✅ FIXED: Ensure timer is visible and start countdown
             countdownTimer.classList.remove('hidden');
             startCountdownTimer(gameSettings.music_duration);
         }
@@ -1510,7 +1556,6 @@
                 albumReveal.classList.remove('hidden');
             }
             
-            // ✅ FIXED: Properly update song info with correct DOM elements
             if (songTitleText || movieName) {
                 if (songTitleText) {
                     songTitle.textContent = songTitleText;
@@ -1555,7 +1600,6 @@
                 hideSuggestions();
             }
             
-            // Submit on Enter
             if (event.key === 'Enter' && query && !hasSubmittedGuess) {
                 submitGuess();
             }
@@ -1663,7 +1707,6 @@
             showNotification('Settings saved successfully!', 'success');
         }
 
-        // Game type selection
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.game-type-option').forEach(option => {
                 option.addEventListener('click', () => {
@@ -1786,7 +1829,6 @@
             }
             
             playerName = playerNameInput.value.trim();
-            // ✅ FIXED: Store the room password for auto-join
             currentRoomPassword = passwordInput.value.trim() || null;
             
             try {
@@ -1806,7 +1848,6 @@
                 const data = await response.json();
                 clientId = data.host_id;
                 isHost = true;
-                // ✅ FIXED: Pass the stored password to joinRoom
                 joinRoom(data.room_id, currentRoomPassword);
                 showNotification('Room created successfully!', 'success');
             } catch (error) {
@@ -1815,7 +1856,6 @@
             }
         }
 
-        // Join room by ID function
         function joinRoomById() {
             const roomIdToJoin = roomIdInput.value.trim().toUpperCase();
             const password = joinPasswordInput.value.trim() || null;
@@ -1844,15 +1884,13 @@
             
             playerName = playerNameInput.value.trim() || playerName;
             roomId = newRoomId;
-            currentRoomPassword = roomPassword; // Store for reconnection
+            currentRoomPassword = roomPassword;
             clientId = clientId || Math.floor(Math.random() * 90000) + 10000;
 
             const encodedPlayerName = encodeURIComponent(playerName);
-            // ✅ FIXED: Dynamic WebSocket protocol detection for HTTPS support
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             let wsUrl = `${protocol}//${window.location.host}/ws/${roomId}/${clientId}/${encodedPlayerName}`;
             
-            // Add password to WebSocket URL if provided
             if (roomPassword) {
                 wsUrl += `?password=${encodeURIComponent(roomPassword)}`;
             }
@@ -1867,7 +1905,6 @@
                 showNotification(`Connected to room ${roomId}`, 'success');
                 addGameNotification(`Welcome to room ${roomId}! 🎉`, 'round_start');
                 
-                // Clear join form
                 roomIdInput.value = '';
                 joinPasswordInput.value = '';
                 passwordInput.value = '';
@@ -1904,13 +1941,12 @@
                     hasSubmittedGuess = false;
                     latestGuess = '';
                     
-                    showMysteryBox(); // ✅ This will now properly show the timer
+                    showMysteryBox();
                     guessInput.disabled = false;
                     guessInput.value = '';
                     guessStatus.textContent = 'Listen carefully and type your guess!';
                     guessStatus.style.color = 'var(--primary-color)';
                     
-                    // Auto-submit after duration - 1 second
                     setTimeout(() => {
                         autoSubmitGuess();
                     }, (gameSettings.music_duration - 1) * 1000);
@@ -1921,7 +1957,6 @@
                     guessInput.disabled = true;
                     stopCountdownTimer();
                     
-                    // ✅ FIXED: Show album reveal with proper song title display
                     console.log('Round ended, song data:', message);
                     if (message.album_image || message.song_title || message.correct_answer) {
                         showAlbumReveal(message.album_image, message.song_title, message.correct_answer);
@@ -1980,13 +2015,11 @@
             gameSettings.music_duration = state.music_duration;
             gameSettings.game_type = state.game_type;
             
-            // Update round info
             if (state.is_game_active) {
                 roundInfo.style.display = 'block';
                 currentRoundSpan.textContent = state.current_round;
                 totalRoundsSpan.textContent = state.total_rounds;
                 
-                // ✅ FIXED: Properly handle reveal phase with song info
                 if (state.is_reveal_phase && state.current_song) {
                     console.log('Showing reveal phase with song:', state.current_song);
                     showAlbumReveal(
@@ -1995,7 +2028,6 @@
                         state.current_song.movie
                     );
                 } else if (state.is_round_active) {
-                    // ✅ FIXED: Only show mystery box if not already showing
                     if (!mysteryBox.classList.contains('hidden') === false) {
                         showMysteryBox();
                     }
@@ -2165,7 +2197,6 @@
             }
         });
 
-        // Auto-uppercase room ID input
         document.addEventListener('DOMContentLoaded', () => {
             const roomIdInput = document.getElementById('roomIdInput');
             if (roomIdInput) {
@@ -2175,7 +2206,6 @@
             }
         });
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 hideSuggestions();
@@ -2183,14 +2213,12 @@
             }
         });
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             showView('home-view');
             loadPublicRooms();
             playerNameInput.focus();
         });
 
-        // Auto-refresh rooms every 10 seconds
         setInterval(() => {
             if (document.getElementById('home-view').classList.contains('active')) {
                 loadPublicRooms();
