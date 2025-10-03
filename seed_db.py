@@ -25,10 +25,15 @@ with open('top500.csv', 'r', newline='', encoding='utf-8') as file:
     # Loop through each row in the file
     for row in reader:
         # Get the title from the second column (index 1)
-        title = row[1]
-        
-        # Insert it into the database
-        cursor.execute("INSERT INTO movies (title) VALUES (?)", (title,))
+        if len(row) > 1:  # ✅ SECURITY FIX: Validate row has enough columns
+            title = row[1].strip()[:200]  # ✅ SECURITY FIX: Limit title length
+            
+            # ✅ SECURITY FIX: Use parameterized query (already correct, but added validation)
+            try:
+                cursor.execute("INSERT INTO movies (title) VALUES (?)", (title,))
+            except sqlite3.IntegrityError:
+                # Skip duplicate titles
+                pass
 
 # --- 3. SAVE AND CLOSE ---
 
