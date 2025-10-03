@@ -30,6 +30,9 @@ movie-music-quiz/
 │   ├── services/             # Business logic services
 │   └── utils/                # Utility functions
 └── static/                   # Frontend assets
+    ├── css/                  # Stylesheets
+    ├── js/                   # JavaScript modules
+    └── index.html            # Main HTML file
 ```
 
 ### Key Components
@@ -39,27 +42,7 @@ movie-music-quiz/
 - **Models**: Type-safe data models using Pydantic
 - **Middleware**: Security headers, rate limiting, CORS
 - **Database**: SQLite with 500+ Bollywood movies
-
-## 🔐 Security Features
-
-This application implements comprehensive security best practices:
-
-- ✅ **Input Sanitization**: All user inputs sanitized to prevent XSS
-- ✅ **SQL Injection Prevention**: Parameterized queries throughout
-- ✅ **Secure Password Handling**: SHA-256 hashing with HMAC comparison
-- ✅ **Rate Limiting**: 60 requests/minute per IP
-- ✅ **Connection Limiting**: 5 concurrent connections per IP
-- ✅ **Security Headers**:
-  - Content-Security-Policy (CSP)
-  - Strict-Transport-Security (HSTS)
-  - X-Frame-Options: DENY
-  - X-Content-Type-Options: nosniff
-  - X-XSS-Protection
-  - Referrer-Policy
-- ✅ **DoS Protection**: Room limits, message size limits, automatic cleanup
-- ✅ **CORS**: Restrictive origins (no wildcards)
-
-See [SECURITY.md](SECURITY.md) for detailed security documentation.
+- **Frontend**: Modular ES6 JavaScript with external CSS
 
 ## 🚀 Quick Start
 
@@ -135,22 +118,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 - **httpx**: Async HTTP client for JioSaavn API
 
 ### Frontend
-- **Vanilla JavaScript**: No framework dependencies
-- **WebSocket API**: Real-time updates
-- **Modern CSS**: Responsive design with gradients
+- **Vanilla JavaScript**: ES6 modules with clean separation of concerns
+- **WebSocket API**: Real-time bidirectional communication
+- **Modern CSS**: Responsive design with animations and gradients
 
 ### External APIs
 - **JioSaavn API**: Music streaming and album art
-
-## 📚 Documentation
-
-- **[QUICK_START_REFACTORED.md](QUICK_START_REFACTORED.md)** - Quick start guide for the refactored application
-- **[REFACTORING_GUIDE.md](REFACTORING_GUIDE.md)** - Detailed refactoring process documentation
-- **[BACKEND_REFACTORING_COMPLETE.md](BACKEND_REFACTORING_COMPLETE.md)** - Complete summary of backend refactoring
-- **[BEFORE_AFTER_COMPARISON.md](BEFORE_AFTER_COMPARISON.md)** - Before/after comparison showing improvements
-- **[SECURITY.md](SECURITY.md)** - Security features and best practices
-- **[CHANGELOG_SECURITY.md](CHANGELOG_SECURITY.md)** - Security-related changes
-- **[RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)** - Deployment guide for Render
 
 ## 🧪 Testing
 
@@ -183,8 +156,6 @@ curl http://localhost:8000/api/rooms
    - Initialize the database
    - Start the server
 
-See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed deployment instructions.
-
 ## 🤝 Contributing
 
 Contributions are welcome! The codebase is now modular and easy to extend:
@@ -206,6 +177,5 @@ MIT License - Feel free to use this project for learning or building your own qu
 
 ---
 
-**Status**: Backend Refactoring Complete ✅ | Frontend Refactoring Pending ⏳  
 **Version**: 2.0.0  
 **Last Updated**: October 3, 2025
