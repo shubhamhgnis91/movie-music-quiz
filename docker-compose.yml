@@ -1,0 +1,18 @@
+services:
+  movie-quiz:
+    container_name: movie-quiz
+    build: .
+    ports:
+      - "8001:8000"  # Avoid port conflicts with other services
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-please-change-this-secret-key-in-production}
+    volumes:
+      - ./data:/code/data  # Persist SQLite database
+      - ./app/database:/code/app/database  # Persist database files
+    restart: unless-stopped
+    networks:
+      - movie-quiz-network
+
+networks:
+  movie-quiz-network:
+    driver: bridge
