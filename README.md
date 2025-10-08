@@ -169,15 +169,8 @@ Contributions are welcome! The codebase is now modular and easy to extend:
 
 MIT License - Feel free to use this project for learning or building your own quiz games!
 
-## 🙏 Acknowledgments
-
-- **JioSaavn** for the music API
-- **FastAPI** for the excellent web framework
-- **GitHub Copilot** for development assistance
 
 ---
 
 **Version**: 2.0.0  
-**Last Updated**: October 3, 2025
-# Test change
-# Auto-deploy test
+**Last Updated**: October 8, 2025
