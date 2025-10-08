@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY ./app /code/app
 COPY ./static /code/static
 COPY ./main.py /code/main.py
+COPY ./top500.csv /code/top500.csv
 
 # Create directory for database
 RUN mkdir -p /code/data
