@@ -9,8 +9,13 @@ from app.config import settings
 from app.services.validation import sanitize_text_input, escape_sql_like_pattern
 
 
-def initialize_database() -> None:
-    """Initialize the database with movie data on startup."""
+def initialize_database(force: bool = False) -> None:
+    """
+    Initialize the database with movie data on startup.
+    
+    Args:
+        force: If True, reinitialize even if database exists
+    """
     try:
         connection = sqlite3.connect(settings.DB_PATH)
         cursor = connection.cursor()
@@ -19,11 +24,11 @@ def initialize_database() -> None:
         cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='movies'")
         table_exists = cursor.fetchone()[0] > 0
         
-        if table_exists:
+        if table_exists and not force:
             cursor.execute("SELECT COUNT(*) FROM movies")
             movie_count = cursor.fetchone()[0]
             if movie_count > 0:
-                print(f"Database already initialized with {movie_count} movies.")
+                print(f"✅ Database already initialized with {movie_count} movies.")
                 connection.close()
                 return
         
@@ -35,7 +40,7 @@ def initialize_database() -> None:
             )
         """)
         
-        print("Initializing database with movie data...")
+        print("🎬 Initializing database with movie data...")
         
         # Try to read from CSV file first
         movies_added = 0
@@ -51,11 +56,11 @@ def initialize_database() -> None:
                         except sqlite3.IntegrityError:
                             pass  # Skip duplicates
             
-            print(f"Added {movies_added} movies from top500.csv")
+            print(f"✅ Added {movies_added} movies from top500.csv")
             
         except FileNotFoundError:
             # Fallback: add some demo movies
-            print("top500.csv not found. Adding demo movies...")
+            print("⚠️  top500.csv not found. Adding demo movies...")
             demo_movies = [
                 "3 Idiots", "Dangal", "PK", "Baahubali", "KGF",
                 "Kabir Singh", "Dilwale Dulhania Le Jayenge", "Sholay",
@@ -70,14 +75,14 @@ def initialize_database() -> None:
                 except sqlite3.IntegrityError:
                     pass
             
-            print(f"Added {movies_added} demo movies")
+            print(f"✅ Added {movies_added} demo movies")
         
         connection.commit()
         connection.close()
-        print("Database initialization completed successfully!")
+        print("✅ Database initialization completed successfully!")
         
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"❌ Error initializing database: {e}")
         # Continue without database - the app will use demo songs
 
 
@@ -86,20 +91,33 @@ def get_random_movie_title() -> Optional[str]:
     Get a random movie title from the database.
     
     Returns:
-        Random movie title or None if database is empty
+        Random movie title or None if database is empty or not initialized
     """
     try:
         connection = sqlite3.connect(settings.DB_PATH)
         cursor = connection.cursor()
+        
+        # Check if the movies table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='movies'")
+        if not cursor.fetchone():
+            connection.close()
+            print("⚠️  Movies table doesn't exist. Database not initialized properly.")
+            return None
+        
         cursor.execute("SELECT title FROM movies ORDER BY RANDOM() LIMIT 1")
         result = cursor.fetchone()
         connection.close()
         
         if result:
             return sanitize_text_input(result[0])
+        else:
+            print("⚠️  No movies found in database.")
+            return None
+    except sqlite3.OperationalError as e:
+        print(f"⚠️  Database operational error: {str(e)[:100]}")
         return None
     except Exception as e:
-        print(f"Database error: {str(e)[:100]}...")
+        print(f"⚠️  Unexpected database error: {str(e)[:100]}")
         return None
 
 
