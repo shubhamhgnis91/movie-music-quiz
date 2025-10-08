@@ -28,7 +28,10 @@ class Settings:
     TRUSTED_HOSTS: list[str] = [
         "movie-music-quiz.onrender.com",
         "localhost",
-        "127.0.0.1"
+        "127.0.0.1",
+	"192.168.1.45",
+	"shubhamsingh91.in",
+	"*.shubhamsingh91.in"
     ]
     
     # Environment
